@@ -205,3 +205,7 @@
     </script>
 </body>
 </html>
+
+
+NOTE:Create your own Hugging face account. Go to settings . Create a new token . Copy the Token . Search for the line "YOUR_HUGGINGFACE_API_TOKEN".
+     (Here it is in 85 line).Replace it with your token
