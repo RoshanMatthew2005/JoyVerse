@@ -82,7 +82,7 @@
         // Game variables
         let score = 0;
         let emotion = "Neutral";
-        const API_TOKEN = "YOUR_HUGGINGFACE_API_TOKEN"; // Replace with your token
+        const API_TOKEN = "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"; // Replace with your token
         
         // DOM elements
         const scoreElement = document.getElementById('score');
