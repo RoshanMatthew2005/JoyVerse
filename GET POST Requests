@@ -1,0 +1,59 @@
+// server.js
+const express = require('express');
+const app = express();
+const PORT = 3000;
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// GET route - Returns hello message
+app.get('/hello', (req, res) => {
+  res.json({
+    message: 'Hello from GET request!',
+    method: 'GET',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// PUT route - Updates and returns hello message
+app.put('/hello', (req, res) => {
+  const { name } = req.body;
+  res.json({
+    message: `Hello ${name || 'World'} from PUT request!`,
+    method: 'PUT',
+    body: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// DELETE route - Returns deletion confirmation
+app.delete('/hello', (req, res) => {
+  res.json({
+    message: 'Hello resource deleted successfully!',
+    method: 'DELETE',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root route for testing
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Express.js server is running!',
+    availableRoutes: [
+      'GET /hello',
+      'PUT /hello',
+      'DELETE /hello'
+    ]
+  });
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log('Available routes:');
+  console.log('- GET http://localhost:3000/hello');
+  console.log('- PUT http://localhost:3000/hello');
+  console.log('- DELETE http://localhost:3000/hello');
+});
+
+module.exports = app;
