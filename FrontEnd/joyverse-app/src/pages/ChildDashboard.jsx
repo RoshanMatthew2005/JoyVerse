@@ -3,12 +3,13 @@ import { Play, Palette, BookOpen, Star, Heart, Smile, Award, User, Clock, Gamepa
 import { useAuth } from '../context/AuthContext';
 import KittenMatchGame from '../components/games/KittenMatchGame';
 import MissingLetterPop from '../components/games/MissingLetterPop';
+import ArtStudio from '../components/games/ArtStudio';
 
-const ChildDashboard = ({ handleLogout }) => {
-  const { user } = useAuth();
+const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
     // Simple state for child dashboard
   const [showGame, setShowGame] = useState(false);
   const [showMissingLetterGame, setShowMissingLetterGame] = useState(false);
+  const [showArtStudio, setShowArtStudio] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [time, setTime] = useState(new Date());
@@ -41,15 +42,14 @@ const ChildDashboard = ({ handleLogout }) => {
       icon: Zap,
       emoji: '🔤',
       onClick: () => setShowMissingLetterGame(true)
-    },
-    {
+    },    {
       id: 3,
       title: '🎨 Art & Drawing',
       description: 'Create beautiful artwork and drawings!',
       color: '#4ecdc4',
       icon: Palette,
       emoji: '🎨',
-      onClick: () => alert('🎨 Art activities coming soon! Keep being creative!')
+      onClick: () => setShowArtStudio(true)
     },
     {
       id: 4,
@@ -451,12 +451,18 @@ const ChildDashboard = ({ handleLogout }) => {
           onClose={() => setShowGame(false)}
           user={user}
         />
-      )}
-
-      {/* Missing Letter Pop Game */}
+      )}      {/* Missing Letter Pop Game */}
       {showMissingLetterGame && (
         <MissingLetterPop 
           onClose={() => setShowMissingLetterGame(false)}
+          user={user}
+        />
+      )}
+
+      {/* Art Studio */}
+      {showArtStudio && (
+        <ArtStudio 
+          onClose={() => setShowArtStudio(false)}
           user={user}
         />
       )}
