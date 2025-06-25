@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Camera, Upload, Gamepad2, Zap, CloudSnow } from 'lucide-react';
+import gameScoreService from '../../services/gameScoreAPI';
 
 const KittenMatchGame = ({ onClose, user }) => {
   // Game state
@@ -11,9 +12,10 @@ const KittenMatchGame = ({ onClose, user }) => {
   const [flippedCards, setFlippedCards] = useState([]);
   const [matchedCards, setMatchedCards] = useState([]);
   const [canFlip, setCanFlip] = useState(true);
-  const [previewTime, setPreviewTime] = useState(3);
-  const [showingPreview, setShowingPreview] = useState(false);
+  const [previewTime, setPreviewTime] = useState(3);  const [showingPreview, setShowingPreview] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(0);
+  const [gameStartTime, setGameStartTime] = useState(null);
+  const [gameEndTime, setGameEndTime] = useState(null);
   
   // Camera state
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -175,10 +177,27 @@ const KittenMatchGame = ({ onClose, user }) => {
       
       if (newFlippedCards[0].emoji === newFlippedCards[1].emoji) {
         setTimeout(() => {
-          const matchedIds = newFlippedCards.map(c => c.id);
-          setMatchedCards(prev => {
+          const matchedIds = newFlippedCards.map(c => c.id);          setMatchedCards(prev => {
             const newMatched = [...prev, ...matchedIds];
             if (newMatched.length === cards.length) {
+              console.log('🎉 KittenMatch: Game completed! All pairs matched.');
+              const endTime = Date.now();
+              setGameEndTime(endTime);
+              
+              // Save game score
+              const timeTaken = gameStartTime ? Math.round((endTime - gameStartTime) / 1000) : 0;
+              const gameData = {
+                score: score + 100 + (combo * 10),
+                maxScore: (cards.length / 2) * 100 + (cards.length / 2 * 10), // Max possible score
+                timeTaken,
+                level,
+                matchesFound: newMatched.length / 2,
+                totalPairs: cards.length / 2,
+                difficulty: currentThemeData.name
+              };
+              
+              console.log('💾 KittenMatch: About to save game data:', gameData);
+              saveGameScore(gameData);
               setTimeout(() => setGameState('complete'), 500);
             }
             return newMatched;
@@ -225,7 +244,6 @@ const KittenMatchGame = ({ onClose, user }) => {
       });
     }, 1000);
   };
-
   const generateCards = (gameLevel) => {
     let id = 0;
     const pairsToUse = Math.min(3 + gameLevel, 8);
@@ -242,6 +260,23 @@ const KittenMatchGame = ({ onClose, user }) => {
     setFlippedCards([]);
     setMatchedCards([]);
     setCanFlip(true);
+    setGameStartTime(Date.now()); // Start timing when cards are generated
+  };  // Save game score to database
+  const saveGameScore = async (gameData) => {
+    try {
+      console.log('🐱 KittenMatch: saveGameScore function called!');
+      console.log('🐱 KittenMatch: Saving game score with data:', gameData);
+      console.log('🐱 KittenMatch: Current localStorage token:', localStorage.getItem('joyverse_token') ? 'EXISTS' : 'MISSING');
+      
+      const formattedData = gameScoreService.formatGameData('kitten-match', gameData);
+      console.log('📝 KittenMatch: Formatted data:', formattedData);
+      
+      const result = await gameScoreService.saveGameScore(formattedData);
+      console.log('✅ KittenMatch: Game score saved successfully:', result);
+    } catch (error) {
+      console.error('❌ KittenMatch: Failed to save game score:', error);
+      // Don't show error to user, just log it
+    }
   };
 
   const handleNextLevel = () => {

@@ -1,14 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Palette, Eraser, Download, RotateCcw, Circle, Square, Minus, Plus } from 'lucide-react';
 import './artstudio.css';
+import gameScoreService from '../../../services/gameScoreAPI';
 
 const ArtStudio = ({ onClose, user }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentColor, setCurrentColor] = useState('#FF6B6B');
-  const [brushSize, setBrushSize] = useState(5);
-  const [tool, setTool] = useState('brush'); // brush, eraser, circle, rectangle, line
+  const [brushSize, setBrushSize] = useState(5);  const [tool, setTool] = useState('brush'); // brush, eraser, circle, rectangle, line
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState(Date.now());
+  const [toolsUsed, setToolsUsed] = useState(new Set(['brush']));
+  const [colorsUsed, setColorsUsed] = useState(new Set([currentColor]));
+  const [stickersAdded, setStickersAdded] = useState(0);
+  const [artworkSaved, setArtworkSaved] = useState(false);
   
   // Predefined colors for kids
   const colors = [
@@ -80,16 +85,47 @@ const ArtStudio = ({ onClose, user }) => {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const downloadArt = () => {
+  };  const downloadArt = async () => {
     const canvas = canvasRef.current;
     const link = document.createElement('a');
     link.download = `${user?.childName || 'My'}_Artwork_${new Date().toISOString().split('T')[0]}.png`;
     link.href = canvas.toDataURL();
     link.click();
+    
+    setArtworkSaved(true);
+    
+    // Save art session score
+    await saveArtScore();
   };
 
+  // Save art session score
+  const saveArtScore = async () => {
+    try {
+      const timeSpent = Math.round((Date.now() - sessionStartTime) / 1000);
+      const gameData = {
+        timeSpent,
+        toolsUsed: Array.from(toolsUsed),
+        colorsUsed: Array.from(colorsUsed),
+        stickersAdded,
+        artworkSaved
+      };
+      
+      const formattedData = gameScoreService.formatGameData('art-studio', gameData);
+      await gameScoreService.saveGameScore(formattedData);
+      console.log('Art session saved successfully');
+    } catch (error) {
+      console.error('Failed to save art session:', error);
+    }
+  };
+
+  // Save score when closing if session was long enough
+  const handleClose = async () => {
+    const timeSpent = Math.round((Date.now() - sessionStartTime) / 1000);
+    if (timeSpent > 30) { // Only save if they spent more than 30 seconds
+      await saveArtScore();
+    }
+    onClose();
+  };
   const addSticker = (emoji) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -100,6 +136,8 @@ const ArtStudio = ({ onClose, user }) => {
     
     ctx.font = '48px Arial';
     ctx.fillText(emoji, x, y);
+    
+    setStickersAdded(prev => prev + 1);
   };
 
   const stickers = ['🌟', '🦋', '🌈', '🌸', '🎈', '🦄', '🌞', '🐱', '🐶', '🦊', '🐸', '🐧', '🦜', '🌺', '🍀', '⭐'];
@@ -110,8 +148,7 @@ const ArtStudio = ({ onClose, user }) => {
         {/* Header */}
         <div className="art-studio-header">
           <h2>🎨 Art Studio</h2>
-          <p>Create amazing artwork, {user?.childName || 'Artist'}! 🌟</p>
-          <button className="close-btn" onClick={onClose}>
+          <p>Create amazing artwork, {user?.childName || 'Artist'}! 🌟</p>          <button className="close-btn" onClick={handleClose}>
             <X size={24} />
           </button>
         </div>
@@ -123,17 +160,22 @@ const ArtStudio = ({ onClose, user }) => {
             {/* Tools */}
             <div className="tool-section">
               <h4>🛠️ Tools</h4>
-              <div className="tool-buttons">
-                <button 
+              <div className="tool-buttons">                <button 
                   className={`tool-btn ${tool === 'brush' ? 'active' : ''}`}
-                  onClick={() => setTool('brush')}
+                  onClick={() => {
+                    setTool('brush');
+                    setToolsUsed(prev => new Set([...prev, 'brush']));
+                  }}
                   title="Brush"
                 >
                   ✏️
                 </button>
                 <button 
                   className={`tool-btn ${tool === 'eraser' ? 'active' : ''}`}
-                  onClick={() => setTool('eraser')}
+                  onClick={() => {
+                    setTool('eraser');
+                    setToolsUsed(prev => new Set([...prev, 'eraser']));
+                  }}
                   title="Eraser"
                 >
                   <Eraser size={20} />
@@ -144,13 +186,15 @@ const ArtStudio = ({ onClose, user }) => {
             {/* Colors */}
             <div className="tool-section">
               <h4>🎨 Colors</h4>
-              <div className="color-palette">
-                {colors.slice(0, 10).map((color, index) => (
+              <div className="color-palette">                {colors.slice(0, 10).map((color, index) => (
                   <button
                     key={index}
                     className={`color-btn ${currentColor === color ? 'active' : ''}`}
                     style={{ backgroundColor: color }}
-                    onClick={() => setCurrentColor(color)}
+                    onClick={() => {
+                      setCurrentColor(color);
+                      setColorsUsed(prev => new Set([...prev, color]));
+                    }}
                   />
                 ))}
                 <button 
@@ -162,13 +206,15 @@ const ArtStudio = ({ onClose, user }) => {
               </div>
               
               {showColorPicker && (
-                <div className="extended-palette">
-                  {colors.slice(10).map((color, index) => (
+                <div className="extended-palette">                  {colors.slice(10).map((color, index) => (
                     <button
                       key={index}
                       className={`color-btn ${currentColor === color ? 'active' : ''}`}
                       style={{ backgroundColor: color }}
-                      onClick={() => setCurrentColor(color)}
+                      onClick={() => {
+                        setCurrentColor(color);
+                        setColorsUsed(prev => new Set([...prev, color]));
+                      }}
                     />
                   ))}
                 </div>

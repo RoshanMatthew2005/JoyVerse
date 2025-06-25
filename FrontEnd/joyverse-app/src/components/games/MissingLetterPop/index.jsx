@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './game.css';
+import gameScoreService from '../../../services/gameScoreAPI';
 
 const MissingLetterPop = ({ onClose, user }) => {
   // Game state
@@ -12,10 +13,12 @@ const MissingLetterPop = ({ onClose, user }) => {
   const [gameActive, setGameActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [bubbles, setBubbles] = useState([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showGameOver, setShowGameOver] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);  const [showGameOver, setShowGameOver] = useState(false);
   const [completedWord, setCompletedWord] = useState('');
   const [feedback, setFeedback] = useState([]);
+  const [gameStartTime, setGameStartTime] = useState(null);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   // Refs
   const gameTimerRef = useRef(null);
@@ -212,10 +215,10 @@ const MissingLetterPop = ({ onClose, user }) => {
       setFeedback(prev => prev.filter(f => f.id !== newFeedback.id));
     }, 1000);
 
-    setBubbles(prev => prev.filter(b => b.id !== bubbleId));
-
-    if (isCorrect) {
+    setBubbles(prev => prev.filter(b => b.id !== bubbleId));    if (isCorrect) {
       setScore(prev => prev + 10);
+      setCorrectAnswers(prev => prev + 1);
+      setTotalQuestions(prev => prev + 1);
       const wordArray = currentWord.split('');
       wordArray[missingPosition] = `<span style="color:#fffa65">${wordArray[missingPosition]}</span>`;
       setCompletedWord(wordArray.join(''));
@@ -225,6 +228,7 @@ const MissingLetterPop = ({ onClose, user }) => {
         startRound();
       }, 1500);
     } else {
+      setTotalQuestions(prev => prev + 1);
       setMistakes(prev => {
         const newMistakes = prev + 1;
         if (newMistakes >= 3) {
@@ -241,9 +245,9 @@ const MissingLetterPop = ({ onClose, user }) => {
     if (gameActive && timeLeft > 0) {
       gameTimerRef.current = setTimeout(() => {
         setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
+      }, 1000);    } else if (timeLeft === 0) {
       setGameActive(false);
+      saveGameScore();
       setShowGameOver(true);
     }
 
@@ -265,7 +269,6 @@ const MissingLetterPop = ({ onClose, user }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [gameActive, bubbles.length, startRound]);
-
   // Start game
   const startGame = () => {
     if (gameActive) {
@@ -277,7 +280,33 @@ const MissingLetterPop = ({ onClose, user }) => {
       setMistakes(0);
       setTimeLeft(60);
       setCurrentTheme(1);
+      setGameStartTime(Date.now());
+      setCorrectAnswers(0);
+      setTotalQuestions(0);
       startRound();
+    }
+  };
+
+  // Save game score to database
+  const saveGameScore = async () => {
+    try {
+      const timeTaken = gameStartTime ? Math.round((Date.now() - gameStartTime) / 1000) : 60;
+      const gameData = {
+        score,
+        maxScore: totalQuestions * 50, // Assuming 50 points per correct answer
+        timeTaken,
+        level: 1,
+        correctAnswers,
+        totalQuestions,
+        mistakes,
+        wordsCompleted: correctAnswers
+      };
+      
+      const formattedData = gameScoreService.formatGameData('missing-letter-pop', gameData);
+      await gameScoreService.saveGameScore(formattedData);
+      console.log('Game score saved successfully');
+    } catch (error) {
+      console.error('Failed to save game score:', error);
     }
   };
 

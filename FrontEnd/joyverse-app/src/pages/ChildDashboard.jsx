@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import KittenMatchGame from '../components/games/KittenMatchGame';
 import MissingLetterPop from '../components/games/MissingLetterPop';
 import ArtStudio from '../components/games/ArtStudio';
+import GameStats from '../components/GameStats';
 
 const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
     // Simple state for child dashboard
@@ -387,10 +388,12 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
                 animation: 'sparkle 3s linear infinite'
               }}>
                 ✨
-              </div>
-            </div>
+              </div>            </div>
           ))}
         </div>
+
+        {/* Game Statistics */}
+        <GameStats user={user} />
 
         {/* Achievement Banner */}
         <div style={{
