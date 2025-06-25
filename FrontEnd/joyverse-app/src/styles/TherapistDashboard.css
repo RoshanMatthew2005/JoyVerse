@@ -1,0 +1,631 @@
+/* Therapist Dashboard Styles */
+.therapist-dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2a082a 0%, #1a0b2e 50%, #0d0d2b 100%);
+  background-size: 400% 400%;
+  animation: therapistGradientShift 15s ease infinite;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  color: white;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+}
+
+@keyframes therapistGradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.therapist-main-content {
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+/* Header Styles */
+.therapist-dashboard-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+  position: relative;
+}
+
+.therapist-dashboard-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1.2;
+}
+
+.therapist-dashboard-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  margin-bottom: 1rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.therapist-header-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.therapist-welcome-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.therapist-logout-button {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.therapist-logout-button:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Glass morphism effect */
+.therapist-glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+}
+
+.therapist-glass-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Grid Layouts */
+.therapist-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.therapist-children-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.therapist-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.therapist-game-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.therapist-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Stat Card Styles */
+.therapist-stat-card {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: default;
+}
+
+.therapist-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.therapist-stat-content h3 {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.therapist-stat-title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.therapist-stat-value {
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  line-height: 1;
+}
+
+.therapist-stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+}
+
+.therapist-trend-text {
+  font-size: 0.75rem;
+}
+
+.therapist-stat-icon {
+  padding: 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.therapist-icon-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.therapist-icon-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.therapist-icon-purple { background: rgba(147, 51, 234, 0.2); color: #a78bfa; }
+.therapist-icon-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+
+/* Child Card Styles */
+.therapist-child-card {
+  padding: 1.5rem;
+  cursor: pointer;
+}
+
+.therapist-child-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.therapist-child-name {
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.therapist-child-age {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.therapist-child-scores {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.therapist-score-item {
+  text-align: center;
+}
+
+.therapist-score-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.therapist-score-value {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.therapist-progress-section {
+  margin-bottom: 1rem;
+}
+
+.therapist-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+}
+
+.therapist-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.therapist-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.therapist-risk-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.therapist-risk-low {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.therapist-risk-moderate {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.therapist-risk-high {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Analysis View */
+.therapist-analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.therapist-analysis-title {
+  color: white;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.therapist-back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+}
+
+.therapist-back-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Chart Styles */
+.therapist-chart-container {
+  padding: 1.5rem;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.therapist-chart-title {
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.therapist-chart-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Game Card Styles */
+.therapist-game-card {
+  padding: 1.5rem;
+}
+
+.therapist-game-title {
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.therapist-game-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.therapist-game-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+}
+
+.therapist-game-stat-value {
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.therapist-improvement-positive {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+/* Summary Styles */
+.therapist-analysis-summary {
+  padding: 2rem;
+}
+
+.therapist-summary-title {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.therapist-summary-section {
+  margin-bottom: 1.5rem;
+}
+
+.therapist-summary-section h4 {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.therapist-summary-section p {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.therapist-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.therapist-tag {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.therapist-tag-strength {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.therapist-tag-challenge {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.therapist-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.therapist-metric-item {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+}
+
+.therapist-metric-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.therapist-metric-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.therapist-metric-positive {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.therapist-metric-warning {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+}
+
+.therapist-metric-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Section Headers */
+.therapist-section-header {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Footer */
+.therapist-dashboard-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.therapist-footer-text {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Loading and Error States */
+.therapist-loading,
+.therapist-error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem;
+  min-height: 400px;
+}
+
+.therapist-loading p,
+.therapist-error-message p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.125rem;
+  margin-top: 1rem;
+}
+
+.therapist-error-message h2 {
+  color: white;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.therapist-retry-button {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.therapist-retry-button:hover {
+  background: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .therapist-dashboard-container {
+    padding: 0.5rem;
+  }
+
+  .therapist-main-content {
+    padding: 0;
+  }
+
+  .therapist-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .therapist-children-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .therapist-analytics-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .therapist-game-performance-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .therapist-analysis-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .therapist-analysis-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .therapist-chart-container {
+    height: 300px;
+  }
+
+  .therapist-child-scores {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .therapist-summary-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-child-scores {
+    grid-template-columns: 1fr;
+  }
+
+  .therapist-tags-container {
+    flex-direction: column;
+  }
+}

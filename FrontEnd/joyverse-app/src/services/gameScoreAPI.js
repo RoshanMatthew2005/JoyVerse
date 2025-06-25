@@ -192,6 +192,33 @@ class GameScoreService {  // Get auth token from localStorage
         };
     }
   }
+
+  // Get children data for therapists
+  async getChildrenData() {
+    try {
+      console.log('🩺 Fetching children data for therapist...');
+      
+      const response = await fetch(`${API_BASE_URL}/therapist/children`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      console.log('📡 Children data response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Children data fetch error:', errorData);
+        throw new Error(errorData.message || 'Failed to fetch children data');
+      }
+
+      const result = await response.json();
+      console.log('✅ Children data fetched successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('💥 Error fetching children data:', error);
+      throw error;
+    }
+  }
 }
 
 // Create and export a singleton instance

@@ -16,10 +16,7 @@ app.use(express.json());
 // MongoDB Connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/joyverse', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI ||  'mongodb+srv://joyadmin:joy123@joyverse.wh2ssu9.mongodb.net/joyverse?retryWrites=true&w=majority&appName=JoyVerse');
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -687,6 +684,190 @@ app.delete('/api/game-scores/:scoreId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Delete game score error:', error);
     res.status(500).json({ message: 'Failed to delete game score' });
+  }
+});
+
+// Get Children Data for Therapists
+app.get('/api/therapist/children', authenticateToken, async (req, res) => {
+  try {
+    console.log('🩺 BACKEND: Therapist requesting children data');
+    
+    // Check if user is a therapist
+    if (req.user.userType !== 'therapist') {
+      return res.status(403).json({ message: 'Access denied. Therapist access required.' });
+    }
+
+    // Get all child users
+    const children = await User.find({ userType: 'child', isActive: true })
+      .select('_id childName age email parentEmail createdAt')
+      .lean();
+
+    console.log(`🩺 BACKEND: Found ${children.length} children`);
+
+    // For each child, get their game scores and calculate analytics
+    const childrenWithData = await Promise.all(children.map(async (child) => {
+      try {
+        // Get all game scores for this child
+        const gameScores = await GameScore.find({ userId: child._id })
+          .sort({ playedAt: -1 })
+          .lean();
+
+        console.log(`🎮 Child ${child.childName}: ${gameScores.length} game scores found`);
+
+        // Group scores by game type and calculate analytics
+        const gameAnalytics = {};
+        const gameTypes = ['kitten-match', 'missing-letter-pop', 'art-studio'];
+        
+        gameTypes.forEach(gameType => {
+          const typeScores = gameScores.filter(score => score.gameType === gameType);
+          
+          if (typeScores.length > 0) {
+            // Calculate average, best, and latest scores
+            const scores = typeScores.map(s => s.score);
+            const times = typeScores.map(s => s.timeTaken).filter(t => t != null);
+            const levels = typeScores.map(s => s.level).filter(l => l != null);
+            
+            // Calculate improvement (compare first vs last 3 games)
+            let improvement = 0;
+            if (typeScores.length >= 4) {
+              const recentScores = scores.slice(0, 3);
+              const oldScores = scores.slice(-3);
+              const recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
+              const oldAvg = oldScores.reduce((a, b) => a + b, 0) / oldScores.length;
+              improvement = Math.round(((recentAvg - oldAvg) / oldAvg) * 100);
+            }
+
+            gameAnalytics[gameType] = {
+              score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length), // Average score
+              bestScore: Math.max(...scores),
+              latestScore: scores[0],
+              time: times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0,
+              attempts: Math.round(levels.reduce((a, b) => a + b, 0) / levels.length) || 1,
+              improvement: Math.max(-50, Math.min(50, improvement)), // Cap improvement between -50% and +50%
+              totalPlayed: typeScores.length,
+              lastPlayed: typeScores[0].playedAt
+            };
+          } else {
+            // No scores for this game type
+            gameAnalytics[gameType] = {
+              score: 0,
+              bestScore: 0,
+              latestScore: 0,
+              time: 0,
+              attempts: 0,
+              improvement: 0,
+              totalPlayed: 0,
+              lastPlayed: null
+            };
+          }
+        });
+
+        // Calculate overall progress and trends
+        const allScores = gameScores.map(s => s.score);
+        const overallProgress = allScores.length > 0 ? 
+          Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
+
+        // Generate weekly progress data (last 4 weeks)
+        const now = new Date();
+        const progressData = [];
+        for (let i = 3; i >= 0; i--) {
+          const weekStart = new Date(now.getTime() - (i * 7 * 24 * 60 * 60 * 1000));
+          const weekEnd = new Date(weekStart.getTime() + (7 * 24 * 60 * 60 * 1000));
+          
+          const weekScores = gameScores.filter(score => 
+            score.playedAt >= weekStart && score.playedAt < weekEnd
+          );
+          
+          const weekAvg = weekScores.length > 0 ? 
+            Math.round(weekScores.reduce((sum, score) => sum + score.score, 0) / weekScores.length) : 
+            (progressData.length > 0 ? progressData[progressData.length - 1].score : 0);
+            
+          progressData.push({
+            week: `Week ${4 - i}`,
+            score: weekAvg,
+            gamesPlayed: weekScores.length
+          });
+        }
+
+        // Determine strengths and challenges based on game performance
+        const strengths = [];
+        const challenges = [];
+        
+        if (gameAnalytics['kitten-match'].score > 80) strengths.push('Visual Memory');
+        else if (gameAnalytics['kitten-match'].score < 60) challenges.push('Visual Processing');
+        
+        if (gameAnalytics['missing-letter-pop'].score > 80) strengths.push('Language Skills');
+        else if (gameAnalytics['missing-letter-pop'].score < 60) challenges.push('Phonemic Awareness');
+        
+        if (gameAnalytics['art-studio'].score > 80) strengths.push('Creative Expression');
+        else if (gameAnalytics['art-studio'].score < 60) challenges.push('Fine Motor Skills');
+        
+        // Default strengths/challenges if none identified
+        if (strengths.length === 0) strengths.push('Developing Skills', 'Consistent Effort');
+        if (challenges.length === 0) challenges.push('Time Management', 'Focus Enhancement');
+
+        return {
+          id: child._id,
+          name: child.childName,
+          age: child.age,
+          email: child.email,
+          parentEmail: child.parentEmail,
+          registeredAt: child.createdAt,
+          games: gameAnalytics,
+          overallProgress: Math.min(100, Math.max(0, overallProgress)),
+          strengths,
+          challenges,
+          progressData,
+          totalGamesPlayed: gameScores.length,
+          lastActivity: gameScores.length > 0 ? gameScores[0].playedAt : child.createdAt
+        };
+      } catch (error) {
+        console.error(`Error processing child ${child.childName}:`, error);
+        // Return basic data if processing fails
+        return {
+          id: child._id,
+          name: child.childName,
+          age: child.age,
+          email: child.email,
+          parentEmail: child.parentEmail,
+          registeredAt: child.createdAt,
+          games: {
+            'kitten-match': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 },
+            'missing-letter-pop': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 },
+            'art-studio': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 }
+          },
+          overallProgress: 0,
+          strengths: ['Developing Skills'],
+          challenges: ['Getting Started'],
+          progressData: [
+            { week: 'Week 1', score: 0 },
+            { week: 'Week 2', score: 0 },
+            { week: 'Week 3', score: 0 },
+            { week: 'Week 4', score: 0 }
+          ],
+          totalGamesPlayed: 0,
+          lastActivity: child.createdAt
+        };
+      }
+    }));
+
+    console.log('✅ BACKEND: Children data processed successfully');
+    res.json({
+      children: childrenWithData,
+      summary: {
+        totalChildren: childrenWithData.length,
+        averageProgress: Math.round(
+          childrenWithData.reduce((sum, child) => sum + child.overallProgress, 0) / 
+          (childrenWithData.length || 1)
+        ),
+        totalGamesPlayed: childrenWithData.reduce((sum, child) => sum + child.totalGamesPlayed, 0),
+        activeChildren: childrenWithData.filter(child => child.totalGamesPlayed > 0).length
+      }
+    });
+
+  } catch (error) {
+    console.error('💥 BACKEND: Get children data error:', error);
+    res.status(500).json({ message: 'Failed to fetch children data' });
   }
 });
 

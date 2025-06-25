@@ -6,7 +6,8 @@ import {
   TherapistSignUp,
   ChildSignUp,
   LoginPage,
-  ChildDashboard
+  ChildDashboard,
+  TherapistDashboard
 } from './pages';
 
 // Protected Route Component
@@ -61,12 +62,16 @@ const ProtectedRoute = ({ children, requiredUserType = null }) => {
 
 const JoyverseAppContent = () => {
   const [currentPage, setCurrentPage] = useState('welcome');
-  const { user, isAuthenticated, logout } = useAuth();
-  // Auto-redirect to dashboard if user is logged in
+  const { user, isAuthenticated, logout } = useAuth();  // Auto-redirect to dashboard if user is logged in
   React.useEffect(() => {
     if (isAuthenticated && user) {
       if (currentPage === 'welcome') {
-        setCurrentPage('child-dashboard');
+        // Redirect to appropriate dashboard based on user type
+        if (user.userType === 'therapist') {
+          setCurrentPage('therapist-dashboard');
+        } else if (user.userType === 'child') {
+          setCurrentPage('child-dashboard');
+        }
       }
     }
   }, [isAuthenticated, user, currentPage]);
@@ -91,8 +96,14 @@ const JoyverseAppContent = () => {
         return <LoginPage setCurrentPage={setCurrentPage} />;
       case 'child-dashboard':
         return (
-          <ProtectedRoute>
+          <ProtectedRoute requiredUserType="child">
             <ChildDashboard handleLogout={handleLogout} />
+          </ProtectedRoute>
+        );
+      case 'therapist-dashboard':
+        return (
+          <ProtectedRoute requiredUserType="therapist">
+            <TherapistDashboard handleLogout={handleLogout} />
           </ProtectedRoute>
         );
       default:
