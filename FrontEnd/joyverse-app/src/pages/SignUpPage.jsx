@@ -1,7 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Smile } from 'lucide-react';
 
-const SignUpPage = ({ setCurrentPage }) => (
+const SignUpPage = () => {
+  const navigate = useNavigate();
+
+  return (
   <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-8">
     <div className="max-w-md mx-auto">
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
@@ -14,7 +18,7 @@ const SignUpPage = ({ setCurrentPage }) => (
           <div className="space-y-4 mb-8">
             <button
               onClick={() => {
-                setCurrentPage('therapist-signup');
+                navigate('/signup/therapist');
               }}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
             >
@@ -24,7 +28,7 @@ const SignUpPage = ({ setCurrentPage }) => (
             
             <button
               onClick={() => {
-                setCurrentPage('child-signup');
+                navigate('/signup/child');
               }}
               className="w-full bg-gradient-to-r from-pink-500 to-yellow-500 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
             >
@@ -36,7 +40,7 @@ const SignUpPage = ({ setCurrentPage }) => (
           <div className="text-center space-y-2">
             <p className="text-gray-600">Already have an account?</p>
             <button
-              onClick={() => setCurrentPage('login')}
+              onClick={() => navigate('/login')}
               className="text-purple-600 hover:text-purple-800 font-semibold"
             >
               Sign In
@@ -45,7 +49,7 @@ const SignUpPage = ({ setCurrentPage }) => (
           
           <div className="text-center mt-4">
             <button
-              onClick={() => setCurrentPage('welcome')}
+              onClick={() => navigate('/')}
               className="text-purple-600 hover:text-purple-800 font-semibold"
             >
               ← Back to Welcome
@@ -55,6 +59,7 @@ const SignUpPage = ({ setCurrentPage }) => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default SignUpPage;

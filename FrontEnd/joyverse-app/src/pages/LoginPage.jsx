@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/authAPI';
 
-const LoginPage = ({ setCurrentPage }) => {
+const LoginPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -53,7 +55,15 @@ const LoginPage = ({ setCurrentPage }) => {
     try {
       const response = await login(formData.email, formData.password);
       alert(`Welcome back! Logged in as ${response.user.userType}`);
-      // User will be automatically redirected based on their type
+      
+      // Redirect based on user type
+      if (response.user.userType === 'child') {
+        navigate('/child-dashboard');
+      } else if (response.user.userType === 'therapist') {
+        navigate('/therapist-dashboard');
+      } else {
+        navigate('/dashboard'); // fallback to general dashboard redirect
+      }
     } catch (error) {
       console.error('Login failed:', error);
       // Error is handled by context
@@ -99,7 +109,7 @@ const LoginPage = ({ setCurrentPage }) => {
                   {emailError}
                   <button
                     type="button"
-                    onClick={() => setCurrentPage('signup')}
+                    onClick={() => navigate('/signup')}
                     className="underline ml-2 font-semibold hover:text-yellow-800"
                   >
                     Sign up here
@@ -130,7 +140,7 @@ const LoginPage = ({ setCurrentPage }) => {
               <p className="text-gray-600">Don't have an account?</p>
               <button
                 type="button"
-                onClick={() => setCurrentPage('signup')}
+                onClick={() => navigate('/signup')}
                 className="text-blue-600 hover:text-blue-800 font-semibold"
               >
                 Create Account
@@ -140,7 +150,7 @@ const LoginPage = ({ setCurrentPage }) => {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => setCurrentPage('welcome')}
+                onClick={() => navigate('/')}
                 className="text-blue-600 hover:text-blue-800 font-semibold"
               >
                 ← Back to Welcome

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Smile } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const ChildSignUp = ({ setCurrentPage }) => {
+const ChildSignUp = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     childName: '',
     age: '',
@@ -37,6 +39,7 @@ const ChildSignUp = ({ setCurrentPage }) => {
       await registerChild(submitData);
       // Registration successful, user will be automatically redirected
       alert('Registration successful! Welcome to Joyverse, little star!');
+      navigate('/child-dashboard');
     } catch (error) {
       console.error('Registration failed:', error);
       // Error is handled by context
@@ -121,7 +124,7 @@ const ChildSignUp = ({ setCurrentPage }) => {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => setCurrentPage('signup')}
+                onClick={() => navigate('/signup')}
                 className="text-pink-600 hover:text-pink-800 font-semibold"
               >
                 ← Back to Role Selection

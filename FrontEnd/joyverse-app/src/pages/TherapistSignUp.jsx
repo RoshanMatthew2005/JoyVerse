@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const TherapistSignUp = ({ setCurrentPage }) => {
+const TherapistSignUp = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -31,6 +33,7 @@ const TherapistSignUp = ({ setCurrentPage }) => {
       await registerTherapist(formData);
       // Registration successful, user will be automatically redirected
       alert('Registration successful! Welcome to Joyverse!');
+      navigate('/therapist-dashboard');
     } catch (error) {
       console.error('Registration failed:', error);
       // Error is handled by context
@@ -113,7 +116,7 @@ const TherapistSignUp = ({ setCurrentPage }) => {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => setCurrentPage('signup')}
+                onClick={() => navigate('/signup')}
                 className="text-purple-600 hover:text-purple-800 font-semibold"
               >
                 ← Back to Role Selection
