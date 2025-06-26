@@ -313,10 +313,9 @@ const KittenMatchGame = ({ onClose, user }) => {
   }, []);
 
   return (
-    <div className="game-modal">
-      <div className="game-container">
-        {/* Game Header */}
-        <div className="game-header">
+    <div className="game-container">
+      {/* Game Header */}
+      <div className="game-header">
           <h2>🐱 Kitten Memory Match - Level {level}</h2>
           <div className="game-controls">
             <div className="game-info">
@@ -484,34 +483,17 @@ const KittenMatchGame = ({ onClose, user }) => {
             </div>
           </div>
         )}
-      </div>
 
       {/* Game Styles */}
       <style jsx>{`
-        .game-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          backdrop-filter: blur(10px);
-          font-family: 'Comic Sans MS', 'Trebuchet MS', cursive, sans-serif;
-        }
-
         .game-container {
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(15px);
           border-radius: 25px;
           padding: 2rem;
           margin: 2rem;
-          max-width: 700px;
-          width: 90%;
-          max-height: 90vh;
+          width: 100%;
+          height: 100%;
           overflow-y: auto;
           border: 3px solid ${currentThemeData.colors.primary};
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);

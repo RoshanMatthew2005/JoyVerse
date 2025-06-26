@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Palette, BookOpen, Star, Heart, Smile, Award, User, Clock, Gamepad2, Music, Zap, Sun, Gift } from 'lucide-react';
+import { Play, Palette, BookOpen, Star, Heart, Smile, Award, User, Clock, Gamepad2, Music, Zap, Sun, Gift, Rocket } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import KittenMatchGame from '../components/games/KittenMatchGame';
-import MissingLetterPop from '../components/games/MissingLetterPop';
-import ArtStudio from '../components/games/ArtStudio';
+import { useNavigate } from 'react-router-dom';
 import GameStats from '../components/GameStats';
 
-const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
-    // Simple state for child dashboard
-  const [showGame, setShowGame] = useState(false);
-  const [showMissingLetterGame, setShowMissingLetterGame] = useState(false);
-  const [showArtStudio, setShowArtStudio] = useState(false);
+const ChildDashboard = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+  
+  // Simple state for child dashboard
   const [currentTheme, setCurrentTheme] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [time, setTime] = useState(new Date());
@@ -33,7 +37,7 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
       color: '#ff6b6b',
       icon: Gamepad2,
       emoji: '🐱',
-      onClick: () => setShowGame(true)
+      onClick: () => navigate('/games/kitten-match')
     },
     {
       id: 2,
@@ -42,18 +46,28 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
       color: '#54a0ff',
       icon: Zap,
       emoji: '🔤',
-      onClick: () => setShowMissingLetterGame(true)
-    },    {
+      onClick: () => navigate('/games/missing-letter-pop')
+    },
+    {
       id: 3,
       title: '🎨 Art & Drawing',
       description: 'Create beautiful artwork and drawings!',
       color: '#4ecdc4',
       icon: Palette,
       emoji: '🎨',
-      onClick: () => setShowArtStudio(true)
+      onClick: () => navigate('/games/art-studio')
     },
     {
       id: 4,
+      title: '🚀 Space Math Quest',
+      description: 'Solve math problems in space adventures!',
+      color: '#a55eea',
+      icon: Rocket,
+      emoji: '🚀',
+      onClick: () => navigate('/games/space-math')
+    },
+    {
+      id: 5,
       title: '📚 Story Time',
       description: 'Read amazing stories and adventures!',
       color: '#45b7d1',
@@ -62,7 +76,7 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
       onClick: () => alert('📚 Story time coming soon! Keep reading!')
     },
     {
-      id: 5,
+      id: 6,
       title: '🎵 Music Fun',
       description: 'Listen to songs and make music!',
       color: '#96ceb4',
@@ -71,7 +85,7 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
       onClick: () => alert('🎵 Music activities coming soon! Keep singing!')
     },
     {
-      id: 6,
+      id: 7,
       title: '⭐ My Achievements',
       description: 'See all your awesome achievements!',
       color: '#feca57',
@@ -80,7 +94,7 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
       onClick: () => alert('🏆 Great job! You are amazing!')
     },
     {
-      id: 7,
+      id: 8,
       title: '🎁 Surprise Box',
       description: 'Daily surprises and fun activities!',
       color: '#ff9ff3',
@@ -446,29 +460,8 @@ const ChildDashboard = ({ handleLogout }) => {  const { user } = useAuth();
               </div>
             ))}
           </div>
-        </div>      </main>
-
-      {/* Kitten Match Game */}
-      {showGame && (
-        <KittenMatchGame 
-          onClose={() => setShowGame(false)}
-          user={user}
-        />
-      )}      {/* Missing Letter Pop Game */}
-      {showMissingLetterGame && (
-        <MissingLetterPop 
-          onClose={() => setShowMissingLetterGame(false)}
-          user={user}
-        />
-      )}
-
-      {/* Art Studio */}
-      {showArtStudio && (
-        <ArtStudio 
-          onClose={() => setShowArtStudio(false)}
-          user={user}
-        />
-      )}
+        </div>
+      </main>
     </div>
   );
 };
