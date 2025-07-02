@@ -399,7 +399,7 @@ const SpaceMathGame = ({ onClose, user }) => {
       
       if (success) {
         setIsEmotionDetectionActive(true);
-        alert('✅ Emotion detection started successfully!');
+        alert('✅ Emotion detection started successfully! Position your face in the camera preview.');
         console.log('✅ Emotion detection test successful');
       } else {
         alert('❌ Emotion detection failed to start');
@@ -408,6 +408,35 @@ const SpaceMathGame = ({ onClose, user }) => {
     } catch (error) {
       console.error('❌ Emotion detection test error:', error);
       alert('❌ Emotion detection test failed: ' + error.message);
+    }
+  };
+
+  // Test capture and send image manually
+  const testCaptureImage = async () => {
+    try {
+      console.log('📸 Testing manual image capture...');
+      
+      if (!isEmotionDetectionActive) {
+        alert('❌ Start emotion detection first!');
+        return;
+      }
+      
+      // Get status first
+      const status = emotionDetectionService.getEmotionStatus();
+      console.log('� Emotion detection status:', status);
+      
+      if (!status.hasVideo || !status.streamActive) {
+        alert('❌ Camera is not active. Restart emotion detection.');
+        return;
+      }
+      
+      // Manually trigger capture
+      await emotionDetectionService.manualCapture();
+      alert('📸 Image captured and sent to API. Check console and server logs for results.');
+      
+    } catch (error) {
+      console.error('❌ Manual capture error:', error);
+      alert('❌ Manual capture failed: ' + error.message);
     }
   };
 
@@ -827,6 +856,30 @@ const SpaceMathGame = ({ onClose, user }) => {
                   }}
                 >
                   🎭 Test Emotions
+                </button>
+                <button
+                  onClick={testCaptureImage}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                    borderRadius: '15px',
+                    padding: '0.6rem 1rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-3px)';
+                    e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                >
+                  📸 Test Capture
                 </button>
               </div>
             </div>

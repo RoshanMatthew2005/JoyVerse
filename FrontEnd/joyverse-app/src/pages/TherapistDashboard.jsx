@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Brain, Target, Award, Clock, Users, Activity, ArrowLeft } from 'lucide-react';
+import { TrendingUp, TrendingDown, Brain, Target, Award, Clock, Users, Activity, ArrowLeft, MessageCircle, Plus, Edit3, Save, X, Calendar, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import gameScoreService from '../services/gameScoreAPI';
 import '../styles/TherapistDashboard.css';
@@ -11,6 +11,13 @@ const TherapistDashboard = ({ handleLogout }) => {
   const [childrenData, setChildrenData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Comments state management
+  const [comments, setComments] = useState({});
+  const [newComment, setNewComment] = useState('');
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [showCommentsFor, setShowCommentsFor] = useState(null);
 
   useEffect(() => {
     if (user && user.userType === 'therapist') {
@@ -158,6 +165,27 @@ const TherapistDashboard = ({ handleLogout }) => {
         
         <div className={`therapist-risk-badge ${getRiskClass(analysis.riskLevel)}`}>
           {analysis.riskLevel}
+        </div>
+        
+        {/* Comments Toggle Button */}
+        <div className="therapist-child-actions">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('🔘 Comments button clicked for child:', child.id, child.name);
+              console.log('🔘 Current showCommentsFor:', showCommentsFor);
+              const newValue = showCommentsFor === child.id ? null : child.id;
+              console.log('🔘 Setting showCommentsFor to:', newValue);
+              setShowCommentsFor(newValue);
+            }}
+            className="therapist-comments-toggle-btn"
+          >
+            <MessageCircle size={16} />
+            {(comments[child.id] || []).length > 0 
+              ? `${comments[child.id].length} Notes` 
+              : 'Add Notes'
+            }
+          </button>
         </div>
       </div>
     );
@@ -372,9 +400,218 @@ const TherapistDashboard = ({ handleLogout }) => {
             </div>
           </div>
         </div>
+
+        {/* Comments Section in Detailed View */}
+        <CommentsSection childId={child.id} childName={child.name} />
       </div>
     );
   };
+
+  // Comments Component
+  const CommentsSection = ({ childId, childName }) => {
+    const childComments = comments[childId] || [];
+    
+    // Add safety check and debugging
+    console.log('💬 CommentsSection rendering for:', childId, childName, 'Comments:', childComments);
+    
+    if (!childId || !childName) {
+      console.error('❌ CommentsSection: Missing childId or childName');
+      return (
+        <div className="therapist-glass-card therapist-comments-section">
+          <div className="therapist-error-message">
+            <p>Error: Unable to load comments for this child</p>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="therapist-glass-card therapist-comments-section">
+        <div className="therapist-comments-header">
+          <h3 className="therapist-comments-title">
+            <MessageCircle size={20} />
+            Therapist Notes - {childName}
+          </h3>
+          <span className="therapist-comments-count">
+            {childComments.length} {childComments.length === 1 ? 'note' : 'notes'}
+          </span>
+        </div>
+
+        {/* Add New Comment */}
+        <div className="therapist-add-comment">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Add a therapeutic note or observation..."
+            className="therapist-comment-input"
+            rows={3}
+          />
+          <div className="therapist-comment-actions">
+            <button 
+              onClick={() => addComment(childId)}
+              className="therapist-add-comment-btn"
+              disabled={!newComment.trim()}
+            >
+              <Plus size={16} />
+              Add Note
+            </button>
+          </div>
+        </div>
+
+        {/* Comments List */}
+        <div className="therapist-comments-list">
+          {childComments.length === 0 ? (
+            <div className="therapist-no-comments">
+              <MessageCircle size={48} />
+              <p>No therapeutic notes yet</p>
+              <span>Add your first observation or progress note</span>
+            </div>
+          ) : (
+            childComments.map((comment) => (
+              <div key={comment.id} className="therapist-comment-item">
+                <div className="therapist-comment-header">
+                  <div className="therapist-comment-author">
+                    <User size={16} />
+                    <span>{comment.author}</span>
+                    {comment.edited && <span className="therapist-edited-tag">(edited)</span>}
+                  </div>
+                  <div className="therapist-comment-date">
+                    <Calendar size={14} />
+                    <span>{comment.timestamp}</span>
+                  </div>
+                </div>
+                
+                {editingComment === comment.id ? (
+                  <div className="therapist-edit-comment">
+                    <textarea
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      className="therapist-comment-input"
+                      rows={3}
+                    />
+                    <div className="therapist-comment-actions">
+                      <button 
+                        onClick={() => editComment(childId, comment.id)}
+                        className="therapist-save-comment-btn"
+                        disabled={!editCommentText.trim()}
+                      >
+                        <Save size={16} />
+                        Save
+                      </button>
+                      <button 
+                        onClick={cancelEditComment}
+                        className="therapist-cancel-comment-btn"
+                      >
+                        <X size={16} />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="therapist-comment-content">
+                    <p className="therapist-comment-text">{comment.text}</p>
+                    <div className="therapist-comment-controls">
+                      <button 
+                        onClick={() => startEditComment(comment)}
+                        className="therapist-edit-comment-btn"
+                      >
+                        <Edit3 size={14} />
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => deleteComment(childId, comment.id)}
+                        className="therapist-delete-comment-btn"
+                      >
+                        <X size={14} />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Comments management functions
+  const addComment = (childId) => {
+    if (!newComment.trim()) return;
+    
+    const comment = {
+      id: Date.now(),
+      text: newComment.trim(),
+      author: user?.fullName || 'Dr. Therapist',
+      date: new Date().toISOString(),
+      timestamp: new Date().toLocaleString()
+    };
+    
+    setComments(prev => ({
+      ...prev,
+      [childId]: [...(prev[childId] || []), comment]
+    }));
+    
+    setNewComment('');
+    
+    // In a real app, you would save to backend here
+    console.log('💬 Added comment for child:', childId, comment);
+  };
+
+  const editComment = (childId, commentId) => {
+    if (!editCommentText.trim()) return;
+    
+    setComments(prev => ({
+      ...prev,
+      [childId]: prev[childId].map(comment => 
+        comment.id === commentId 
+          ? { ...comment, text: editCommentText.trim(), edited: true }
+          : comment
+      )
+    }));
+    
+    setEditingComment(null);
+    setEditCommentText('');
+    
+    console.log('✏️ Edited comment:', commentId);
+  };
+
+  const deleteComment = (childId, commentId) => {
+    setComments(prev => ({
+      ...prev,
+      [childId]: prev[childId].filter(comment => comment.id !== commentId)
+    }));
+    
+    console.log('🗑️ Deleted comment:', commentId);
+  };
+
+  const startEditComment = (comment) => {
+    setEditingComment(comment.id);
+    setEditCommentText(comment.text);
+  };
+
+  const cancelEditComment = () => {
+    setEditingComment(null);
+    setEditCommentText('');
+  };
+
+  // Load comments from localStorage on component mount
+  useEffect(() => {
+    const savedComments = localStorage.getItem('therapistComments');
+    if (savedComments) {
+      try {
+        setComments(JSON.parse(savedComments));
+      } catch (err) {
+        console.error('Failed to load comments:', err);
+      }
+    }
+  }, []);
+
+  // Save comments to localStorage whenever comments change
+  useEffect(() => {
+    localStorage.setItem('therapistComments', JSON.stringify(comments));
+  }, [comments]);
 
   if (!user || user.userType !== 'therapist') {
     return (
@@ -434,7 +671,12 @@ const TherapistDashboard = ({ handleLogout }) => {
       <div className="medical-float-1"></div>
       <div className="medical-float-2"></div>
       
-      <div className="therapist-main-content">        <div className="therapist-dashboard-header">
+      <div className="therapist-main-content">
+        {(() => {
+          console.log('🏥 TherapistDashboard rendering - showCommentsFor:', showCommentsFor);
+          console.log('🏥 TherapistDashboard - childrenData length:', childrenData.length);
+          return null; // This is just for debugging
+        })()}        <div className="therapist-dashboard-header">
           <h1 className="therapist-dashboard-title">
             JoyVerse Therapy Dashboard
           </h1>
@@ -512,6 +754,23 @@ const TherapistDashboard = ({ handleLogout }) => {
                   onClick={setSelectedChild}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Expanded Comments Section */}
+          {showCommentsFor && (
+            <div className="therapist-expanded-comments">
+              {(() => {
+                console.log('🔍 Rendering expanded comments for:', showCommentsFor);
+                const selectedChild = childrenData.find(c => c.id === showCommentsFor);
+                console.log('🔍 Found child:', selectedChild);
+                return (
+                  <CommentsSection 
+                    childId={showCommentsFor} 
+                    childName={selectedChild?.name || 'Child'} 
+                  />
+                );
+              })()}
             </div>
           )}
         </div>

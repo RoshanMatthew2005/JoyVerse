@@ -161,34 +161,61 @@ class EmotionDetectionService {
       this.previewContainer.id = 'emotion-camera-preview';
       this.previewContainer.style.cssText = `
         position: fixed;
-        top: 20px;
+        top: 80px;
         right: 20px;
-        width: 200px;
-        height: 150px;
+        width: 250px;
+        height: 200px;
         border: 3px solid #4CAF50;
-        border-radius: 10px;
+        border-radius: 15px;
         overflow: hidden;
         z-index: 10000;
         background: #000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       `;
       
       // Add instruction text
       const instruction = document.createElement('div');
       instruction.style.cssText = `
         position: absolute;
-        top: -30px;
+        top: -60px;
         left: 0;
         right: 0;
-        background: rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 10px;
+        font-size: 14px;
+        text-align: center;
+        border-radius: 10px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+      `;
+      instruction.innerHTML = `
+        <div>📹 Position Your Face Clearly</div>
+        <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
+          • Look directly at camera<br>
+          • Ensure good lighting<br>
+          • Keep face centered
+        </div>
+      `;
+      
+      // Add status indicator
+      this.statusIndicator = document.createElement('div');
+      this.statusIndicator.style.cssText = `
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        background: rgba(244, 67, 54, 0.9);
         color: white;
         padding: 5px;
         font-size: 12px;
         text-align: center;
         border-radius: 5px;
         font-family: Arial, sans-serif;
+        font-weight: bold;
+        z-index: 10001;
       `;
-      instruction.textContent = '📹 Position your face in the camera';
+      this.statusIndicator.textContent = '🔍 Looking for face...';
       
       // Clone video element for preview
       this.previewVideo = this.videoElement.cloneNode();
@@ -204,25 +231,40 @@ class EmotionDetectionService {
       this.previewVideo.playsInline = true;
       
       this.previewContainer.appendChild(instruction);
+      this.previewContainer.appendChild(this.statusIndicator);
       this.previewContainer.appendChild(this.previewVideo);
       document.body.appendChild(this.previewContainer);
       
-      // Auto-hide preview after 30 seconds (extended for debugging)
-      setTimeout(() => {
+      // Auto-hide preview after 60 seconds (longer for debugging)
+      this.previewTimeout = setTimeout(() => {
         this.removePreviewFromDOM();
-      }, 30000);
+      }, 60000);
       
-      console.log('📹 Camera preview added to DOM');
+      console.log('📹 Enhanced camera preview added to DOM');
     }
   }
 
   // Remove preview from DOM
   removePreviewFromDOM() {
+    if (this.previewTimeout) {
+      clearTimeout(this.previewTimeout);
+      this.previewTimeout = null;
+    }
+    
     if (this.previewContainer && this.previewContainer.parentNode) {
       this.previewContainer.parentNode.removeChild(this.previewContainer);
       this.previewContainer = null;
       this.previewVideo = null;
+      this.statusIndicator = null;
       console.log('📹 Camera preview removed from DOM');
+    }
+  }
+
+  // Update preview status
+  updatePreviewStatus(message, isGood = false) {
+    if (this.statusIndicator) {
+      this.statusIndicator.style.background = isGood ? 'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)';
+      this.statusIndicator.textContent = message;
     }
   }
 
@@ -311,6 +353,16 @@ class EmotionDetectionService {
       if (response.ok) {
         const result = await response.json();
         console.log('🎯 Emotion detected:', result);
+        
+        // Update preview status based on result
+        if (result.note && result.note.includes('no face detected')) {
+          this.updatePreviewStatus('❌ No face detected - please adjust position', false);
+        } else if (result.confidence < 0.3) {
+          this.updatePreviewStatus('⚠️ Low confidence - improve lighting/position', false);
+        } else {
+          this.updatePreviewStatus(`✅ ${result.emotion} detected (${Math.round(result.confidence * 100)}%)`, true);
+        }
+        
         return result;
       } else {
         const errorData = await response.text();
@@ -319,6 +371,8 @@ class EmotionDetectionService {
           statusText: response.statusText,
           error: errorData
         });
+        
+        this.updatePreviewStatus('❌ API Error - check server', false);
         
         // If it's a "No face detected" error, try again after a short delay
         if (response.status === 400 && errorData.includes('No face detected')) {
@@ -353,10 +407,10 @@ class EmotionDetectionService {
       this.emotionHistory.shift();
     }
 
-    // More responsive emotion changes - lower threshold for fast mode
-    const confidenceThreshold = 0.3; // Lower threshold for faster response
+    // More responsive emotion changes - very low threshold for testing
+    const confidenceThreshold = 0.05; // Very low threshold to catch even default emotions
     const shouldChange = emotion !== this.lastEmotion && confidence > confidenceThreshold;
-    const forceChange = confidence > 0.6; // Force change for high confidence
+    const forceChange = confidence > 0.3; // Force change for moderate confidence
     
     if (shouldChange || forceChange) {
       this.lastEmotion = emotion;
@@ -369,6 +423,8 @@ class EmotionDetectionService {
           history: this.emotionHistory
         });
       }
+    } else {
+      console.log(`🎭 Emotion ${emotion} (${Math.round(confidence * 100)}%) - threshold not met or same as last`);
     }
   }
 
@@ -481,8 +537,17 @@ class EmotionDetectionService {
       isCapturing: this.isCapturing,
       lastEmotion: this.lastEmotion,
       emotionHistory: this.emotionHistory,
-      dominantEmotion: this.getDominantEmotion()
+      dominantEmotion: this.getDominantEmotion(),
+      hasVideo: !!this.videoElement,
+      hasStream: !!this.stream,
+      streamActive: this.stream?.active || false,
+      videoReadyState: this.videoElement?.readyState || 'unknown'
     };
+  }
+
+  // Public method to manually trigger capture (for testing)
+  async manualCapture() {
+    return await this.captureAndAnalyze();
   }
 
   // Test API connection

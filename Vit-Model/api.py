@@ -92,6 +92,11 @@ async def predict(file: UploadFile = File(...)):
     if frame is None:
         raise HTTPException(status_code=400, detail="Invalid image file.")  # Error if image is invalid
 
+    # Save debug image to see what we're receiving
+    debug_filename = f"debug_image_{int(time.time())}.jpg"
+    cv2.imwrite(debug_filename, frame)
+    logger.info(f"Debug image saved as {debug_filename}, dimensions: {frame.shape}")
+
     # Face mesh detection
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
     results = face_mesh.process(rgb_frame)  # Detect face landmarks
