@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './game.css';
 import gameScoreService from '../../../services/gameScoreAPI';
+import emotionDetectionService from '../../../services/emotionAPI';
+import { getThemeForEmotion } from '../../../utils/emotionThemes';
 
 const MissingLetterPop = ({ onClose, user }) => {
   // Game state
@@ -19,6 +21,11 @@ const MissingLetterPop = ({ onClose, user }) => {
   const [gameStartTime, setGameStartTime] = useState(null);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
+
+  // Emotion detection states
+  const [currentEmotion, setCurrentEmotion] = useState('happiness');
+  const [emotionTheme, setEmotionTheme] = useState(getThemeForEmotion('happiness'));
+  const [isEmotionDetectionActive, setIsEmotionDetectionActive] = useState(false);
 
   // Refs
   const gameTimerRef = useRef(null);
@@ -231,10 +238,7 @@ const MissingLetterPop = ({ onClose, user }) => {
       setTotalQuestions(prev => prev + 1);
       setMistakes(prev => {
         const newMistakes = prev + 1;
-        if (newMistakes >= 3) {
-          setCurrentTheme(prevTheme => (prevTheme % 4) + 1);
-          return 0;
-        }
+        // Removed theme change on mistakes - themes now change based on emotions only
         return newMistakes;
       });
     }
@@ -273,19 +277,70 @@ const MissingLetterPop = ({ onClose, user }) => {
   const startGame = () => {
     if (gameActive) {
       setGameActive(false);
+      // Stop emotion detection when game stops
+      emotionDetectionService.stopEmotionDetection();
+      setIsEmotionDetectionActive(false);
     } else {
       setGameActive(true);
       setShowGameOver(false);
       setScore(0);
       setMistakes(0);
       setTimeLeft(60);
-      setCurrentTheme(1);
+      // Removed setCurrentTheme(1) - theme is now controlled by emotions
       setGameStartTime(Date.now());
       setCorrectAnswers(0);
       setTotalQuestions(0);
       startRound();
+      
+      // Initialize emotion detection
+      initializeEmotionDetection();
     }
   };
+
+  // Initialize emotion detection
+  const initializeEmotionDetection = async () => {
+    try {
+      const success = await emotionDetectionService.startEmotionDetection(handleEmotionDetected, true);
+      if (success) {
+        setIsEmotionDetectionActive(true);
+        emotionDetectionService.enableFastMode();
+        console.log('🎯 Emotion detection initialized for Missing Letter Pop Game');
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize emotion detection:', error);
+    }
+  };
+
+  // Handle emotion detection results
+  const handleEmotionDetected = (emotionData) => {
+    const { emotion } = emotionData;
+    setCurrentEmotion(emotion);
+    const newTheme = getThemeForEmotion(emotion);
+    setEmotionTheme(newTheme);
+  };
+
+  // Test API connection
+  const testAPIConnection = async () => {
+    try {
+      const result = await emotionDetectionService.testAPIConnection();
+      if (result.success) {
+        alert('✅ API is working! ' + result.message);
+      } else {
+        alert('❌ API test failed: ' + result.message);
+      }
+    } catch (error) {
+      alert('❌ Error testing API: ' + error.message);
+    }
+  };
+
+  // Cleanup effect for emotion detection
+  useEffect(() => {
+    return () => {
+      if (isEmotionDetectionActive) {
+        emotionDetectionService.stopEmotionDetection();
+      }
+    };
+  }, [isEmotionDetectionActive]);
 
   // Save game score to database
   const saveGameScore = async () => {
@@ -316,7 +371,7 @@ const MissingLetterPop = ({ onClose, user }) => {
     setScore(0);
     setMistakes(0);
     setTimeLeft(60);
-    setCurrentTheme(1);
+    // Removed setCurrentTheme(1) - theme is now controlled by emotions
     setBubbles([]);
     setCompletedWord('');
     setShowGameOver(false);
@@ -336,25 +391,25 @@ const MissingLetterPop = ({ onClose, user }) => {
   return (
     <div 
       style={{
-        position: 'fixed',
+        position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
         height: '100%',
-        background: 'rgba(0, 0, 0, 0.8)',
+        background: emotionTheme.colors.background || `linear-gradient(-45deg, ${emotionTheme.colors.primary}40, ${emotionTheme.colors.secondary}40, ${emotionTheme.colors.accent}40)`,
+        backgroundSize: '400% 400%',
+        animation: 'gradientShift 15s ease infinite',
+        transition: 'background 0.8s ease-in-out',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(10px)'
+        zIndex: 0
       }}
     >
       <div className={`missing-letter-game theme-${currentTheme}`} style={{
-        width: '90%',
-        maxWidth: '900px',
-        height: '90%',
-        maxHeight: '800px',
-        borderRadius: '25px',
+        width: '100%',
+        height: '100%',
+        borderRadius: '0',
         overflow: 'hidden',
         position: 'relative'
       }}>
@@ -408,7 +463,6 @@ const MissingLetterPop = ({ onClose, user }) => {
           <div className="stats-container">
             <div className="stat-box">Score: {score}</div>
             <div className="stat-box">Time: {timeLeft}s</div>
-            <div className="stat-box">Mistakes: {mistakes}/3</div>
           </div>
         </div>
 
@@ -484,6 +538,12 @@ const MissingLetterPop = ({ onClose, user }) => {
         >
           Reset Game
         </button>
+        <button
+          onClick={testAPIConnection}
+          className="btn btn-test"
+        >
+          🔌 Test API
+        </button>
       </div>
 
       {/* Game Over Modal */}
@@ -500,9 +560,37 @@ const MissingLetterPop = ({ onClose, user }) => {
               className="btn-play-again"
             >
               Play Again
-            </button>          </div>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Simple Theme Status */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '20px',
+        background: 'rgba(255, 255, 255, 0.9)',
+        color: '#333',
+        padding: '8px 16px',
+        borderRadius: '20px',
+        fontSize: '14px',
+        fontWeight: '600',
+        zIndex: 1001,
+        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+        border: '2px solid rgba(255, 255, 255, 0.8)'
+      }}>
+        Theme is {emotionTheme.name}
+      </div>
+
+      {/* CSS for gradient animation */}
+      <style jsx>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
       </div>
     </div>
   );

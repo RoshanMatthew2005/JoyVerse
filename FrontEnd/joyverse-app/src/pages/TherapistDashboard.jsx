@@ -430,6 +430,10 @@ const TherapistDashboard = ({ handleLogout }) => {
 
   return (
     <div className="therapist-dashboard-container">
+      {/* Medical floating elements */}
+      <div className="medical-float-1"></div>
+      <div className="medical-float-2"></div>
+      
       <div className="therapist-main-content">        <div className="therapist-dashboard-header">
           <h1 className="therapist-dashboard-title">
             JoyVerse Therapy Dashboard

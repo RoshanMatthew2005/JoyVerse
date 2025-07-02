@@ -3,6 +3,7 @@ import { Play, Palette, BookOpen, Star, Heart, Smile, Award, User, Clock, Gamepa
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import GameStats from '../components/GameStats';
+import emotionDetectionService from '../services/emotionAPI';
 
 const ChildDashboard = () => {
   const { user, logout } = useAuth();
@@ -50,6 +51,15 @@ const ChildDashboard = () => {
     },
     {
       id: 3,
+      title: '🚀 Space Math Quest',
+      description: 'Explore planets and solve math problems in space!',
+      color: '#a55eea',
+      icon: Rocket,
+      emoji: '🚀',
+      onClick: () => navigate('/games/space-math')
+    },
+    {
+      id: 4,
       title: '🎨 Art & Drawing',
       description: 'Create beautiful artwork and drawings!',
       color: '#4ecdc4',
@@ -58,49 +68,13 @@ const ChildDashboard = () => {
       onClick: () => navigate('/games/art-studio')
     },
     {
-      id: 4,
-      title: '🚀 Space Math Quest',
-      description: 'Solve math problems in space adventures!',
-      color: '#a55eea',
-      icon: Rocket,
-      emoji: '🚀',
-      onClick: () => navigate('/games/space-math')
-    },
-    {
       id: 5,
-      title: '📚 Story Time',
-      description: 'Read amazing stories and adventures!',
-      color: '#45b7d1',
-      icon: BookOpen,
-      emoji: '📖',
-      onClick: () => alert('📚 Story time coming soon! Keep reading!')
-    },
-    {
-      id: 6,
       title: '🎵 Music Fun',
       description: 'Listen to songs and make music!',
       color: '#96ceb4',
       icon: Music,
       emoji: '🎵',
       onClick: () => alert('🎵 Music activities coming soon! Keep singing!')
-    },
-    {
-      id: 7,
-      title: '⭐ My Achievements',
-      description: 'See all your awesome achievements!',
-      color: '#feca57',
-      icon: Award,
-      emoji: '🏆',
-      onClick: () => alert('🏆 Great job! You are amazing!')
-    },
-    {
-      id: 8,
-      title: '🎁 Surprise Box',
-      description: 'Daily surprises and fun activities!',
-      color: '#ff9ff3',
-      icon: Gift,
-      emoji: '🎁',
-      onClick: () => alert('🎁 Surprise! You get a virtual hug! 🤗')
     }
   ];
 
@@ -128,15 +102,27 @@ const ChildDashboard = () => {
     return () => clearTimeout(welcomeTimer);
   }, []);
 
+  // Ensure camera is stopped when landing on dashboard
+  useEffect(() => {
+    console.log('🏠 Arrived at Child Dashboard, ensuring camera is stopped');
+    emotionDetectionService.stopEmotionDetection();
+  }, []);
+
   return (
     <div style={{
+      width: '100vw',
+      height: '100vh',
       minHeight: '100vh',
       background: `linear-gradient(-45deg, ${currentThemeColors[0]}, ${currentThemeColors[1]}, ${currentThemeColors[2]}, ${currentThemeColors[3]})`,
       backgroundSize: '400% 400%',
       animation: 'gradientShift 15s ease infinite',
       fontFamily: '"Comic Sans MS", "Trebuchet MS", cursive, sans-serif',
-      position: 'relative',
-      overflow: 'hidden'
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      overflow: 'auto',
+      margin: 0,
+      padding: 0
     }}>
       {/* Welcome Animation */}
       {showWelcome && (

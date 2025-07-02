@@ -1,26 +1,43 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import GameLayout from '../components/GameLayout';
 import KittenMatchGame from '../components/games/KittenMatchGame';
+import emotionDetectionService from '../services/emotionAPI';
 
 const KittenMatchGamePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const handleGameClose = () => {
+    // Ensure emotion detection is stopped when leaving the game
+    console.log('🚪 Leaving Kitten Match Game, stopping emotion detection');
+    emotionDetectionService.stopEmotionDetection();
     navigate('/child-dashboard');
   };
 
+  // Cleanup on component unmount (browser back button, etc.)
+  useEffect(() => {
+    return () => {
+      console.log('🧹 KittenMatchGamePage unmounting, stopping emotion detection');
+      emotionDetectionService.stopEmotionDetection();
+    };
+  }, []);
+
   return (
-    <GameLayout title="🐱 Kitten Memory Match" onBack={handleGameClose}>
-      <div className="h-full w-full">
-        <KittenMatchGame 
-          onClose={handleGameClose}
-          user={user}
-        />
-      </div>
-    </GameLayout>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      overflow: 'hidden',
+      zIndex: 1000
+    }}>
+      <KittenMatchGame 
+        onClose={handleGameClose}
+        user={user}
+      />
+    </div>
   );
 };
 
