@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Gamepad2, Zap, CloudSnow } from 'lucide-react';
+import { X, Gamepad2, Zap, CloudSnow, Camera } from 'lucide-react';
 import gameScoreService from '../../services/gameScoreAPI';
-import emotionDetectionService from '../../services/emotionAPI';
-import { getThemeForEmotion, emotionThemes } from '../../utils/emotionThemes';
+import Webcam from 'react-webcam';
+import axios from 'axios';
 
 const KittenMatchGame = ({ onClose, user }) => {
   // Game state
@@ -14,19 +14,25 @@ const KittenMatchGame = ({ onClose, user }) => {
   const [flippedCards, setFlippedCards] = useState([]);
   const [matchedCards, setMatchedCards] = useState([]);
   const [canFlip, setCanFlip] = useState(true);
-  const [previewTime, setPreviewTime] = useState(3);  const [showingPreview, setShowingPreview] = useState(false);
+  const [previewTime, setPreviewTime] = useState(3);  
+  const [showingPreview, setShowingPreview] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(0);
   const [gameStartTime, setGameStartTime] = useState(null);
   const [gameEndTime, setGameEndTime] = useState(null);
   const [encouragingMessage, setEncouragingMessage] = useState('');
   const [showEncouragement, setShowEncouragement] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60); // 1-minute timer
   
-  // Emotion detection states
-  const [currentEmotion, setCurrentEmotion] = useState('happiness');
-  const [emotionTheme, setEmotionTheme] = useState(getThemeForEmotion('happiness'));
-  const [isEmotionDetectionActive, setIsEmotionDetectionActive] = useState(false);
-  const [showEmotionFeedback, setShowEmotionFeedback] = useState(false);
-  const [fastMode, setFastMode] = useState(true); // Enable fast mode by default
+  // Webcam and emotion state
+  const webcamRef = useRef(null);
+  const [emotion, setEmotion] = useState('neutral');
+  const [emotionConfidence, setEmotionConfidence] = useState(0);
+  const [emotionBackground, setEmotionBackground] = useState(null);
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [captureInterval, setCaptureInterval] = useState(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [lastCaptureTime, setLastCaptureTime] = useState(0);
+  const captureDelay = 5000; // Capture every 5 seconds
 
   // Game themes with enhanced colors and emojis
   const themes = [
@@ -108,6 +114,16 @@ const KittenMatchGame = ({ onClose, user }) => {
     }
   ];
 
+  // Emotion to background color/gradient mapping
+  const emotionColors = {
+    happiness: 'linear-gradient(-45deg, #ff9a9e, #fecfef, #fad0c4, #ffd1ff)', // Warm, happy colors
+    sadness: 'linear-gradient(-45deg, #a1c4fd, #c2e9fb, #6a85b6, #bac8e0)',   // Cool, blue colors
+    anger: 'linear-gradient(-45deg, #ff416c, #ff4b2b, #f78ca0, #fe9a8b)',     // Red, intense colors
+    fear: 'linear-gradient(-45deg, #4b6cb7, #182848, #2c3e50, #4b6cb7)',      // Dark, deep colors
+    surprise: 'linear-gradient(-45deg, #faaca8, #ddd6f3, #f3e7e9, #e3eeff)',  // Vibrant, bright colors
+    neutral: null // Use theme default
+  };
+
   const currentThemeData = themes[currentTheme];
   const kittenTypes = currentThemeData.emojis;
 
@@ -141,6 +157,134 @@ const KittenMatchGame = ({ onClose, user }) => {
     setShowEncouragement(true);
     setTimeout(() => setShowEncouragement(false), 2000);
   };
+
+  // Emotion detection setup
+  const detectEmotion = useCallback(async (imageSrc) => {
+    try {
+      const response = await axios.post('https://your-emotion-detection-api.com/detect', {
+        image: imageSrc
+      });
+      
+      if (response.data && response.data.emotion) {
+        setEmotion(response.data.emotion);
+        setEmotionConfidence(response.data.confidence);
+        
+        // Change background based on emotion
+        if (response.data.emotion === 'happy') {
+          setEmotionBackground('linear-gradient(-45deg, #81fbb8, #28c76f)');
+        } else if (response.data.emotion === 'sad') {
+          setEmotionBackground('linear-gradient(-45deg, #fbc2eb, #a6c1ee)');
+        } else if (response.data.emotion === 'angry') {
+          setEmotionBackground('linear-gradient(-45deg, #ff758c, #ff7eb3)');
+        } else {
+          setEmotionBackground(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error detecting emotion:', error);
+    }
+  }, []);
+
+  // Webcam capture and emotion detection
+  useEffect(() => {
+    const captureImage = async () => {
+      if (webcamRef.current && isCapturing) {
+        const imageSrc = webcamRef.current.getScreenshot();
+        
+        if (imageSrc) {
+          detectEmotion(imageSrc);
+        }
+      }
+    };
+
+    // Start capturing at intervals
+    if (isCapturing) {
+      captureImage();
+      const interval = setInterval(captureImage, captureDelay);
+      setCaptureInterval(interval);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isCapturing, detectEmotion, captureDelay]);
+
+  // Webcam and emotion detection functions
+  const captureImage = async () => {
+    if (!webcamRef.current || !webcamRef.current.video || !webcamRef.current.video.readyState === 4) {
+      console.log('Webcam not ready yet');
+      return;
+    }
+
+    // Check if enough time has passed since last capture
+    const now = Date.now();
+    if (now - lastCaptureTime < captureDelay) {
+      return; // Skip this capture, not enough time has passed
+    }
+    
+    setLastCaptureTime(now);
+    setIsCapturing(true);
+
+    try {
+      const video = webcamRef.current.video;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw the current video frame to the canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert canvas to blob
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/jpeg', 0.8);
+      });
+
+      // Send to emotion API
+      const formData = new FormData();
+      formData.append('file', blob, 'webcam.jpg');
+
+      const response = await axios.post('http://localhost:8001/predict', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Update emotion state
+      console.log('Emotion prediction:', response.data);
+      setEmotion(response.data.emotion);
+      setEmotionConfidence(response.data.confidence);
+      
+      // Update background based on emotion
+      setEmotionBackground(emotionColors[response.data.emotion]);
+    } catch (error) {
+      console.error('Error capturing or analyzing image:', error);
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const toggleWebcam = () => {
+    setShowWebcam(prev => !prev);
+    if (!showWebcam) {
+      // Start capturing when webcam is shown
+      const interval = setInterval(captureImage, 5000); // Capture every 5 seconds
+      setCaptureInterval(interval);
+    } else {
+      // Stop capturing when webcam is hidden
+      if (captureInterval) {
+        clearInterval(captureInterval);
+        setCaptureInterval(null);
+      }
+    }
+  };
+
+  // Clean up webcam interval on component unmount
+  useEffect(() => {
+    return () => {
+      if (captureInterval) {
+        clearInterval(captureInterval);
+      }
+    };
+  }, [captureInterval]);
 
   // Game functions
   const handleCardClick = (card) => {
@@ -215,6 +359,7 @@ const KittenMatchGame = ({ onClose, user }) => {
     setGameState('preview');
     setShowingPreview(true);
     setPreviewTime(3);
+    setTimeLeft(60); // Reset timer to 1 minute
     generateCards(1);
     
     const previewTimer = setInterval(() => {
@@ -290,99 +435,41 @@ const KittenMatchGame = ({ onClose, user }) => {
     }, 1000);
   };
 
-  // Cleanup camera on unmount
-  // Cleanup effect and emotion detection
+  // Timer effect
   useEffect(() => {
-    // Initialize emotion detection when game starts playing
-    if (gameState === 'playing' && !isEmotionDetectionActive) {
-      initializeEmotionDetection();
+    let timerInterval;
+    
+    // Only run timer during gameplay
+    if (gameState === 'playing') {
+      timerInterval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerInterval);
+            // End game when timer reaches 0
+            if (matchedCards.length < cards.length) {
+              const endTime = Date.now();
+              setGameEndTime(endTime);
+              setGameState('complete');
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
     
-    // Cleanup when game ends or component unmounts
     return () => {
-      if (isEmotionDetectionActive) {
-        console.log('🧹 Cleaning up emotion detection for Kitten Match Game');
-        emotionDetectionService.stopEmotionDetection();
-        setIsEmotionDetectionActive(false);
-      }
+      if (timerInterval) clearInterval(timerInterval);
     };
-  }, [gameState, isEmotionDetectionActive]);
+  }, [gameState, matchedCards.length, cards.length]);
 
-  // Additional cleanup when game state changes
+  // Cleanup effect
   useEffect(() => {
-    if (gameState === 'complete' || gameState === 'menu') {
-      if (isEmotionDetectionActive) {
-        console.log('🎮 Game ended, stopping emotion detection');
-        emotionDetectionService.stopEmotionDetection();
-        setIsEmotionDetectionActive(false);
-      }
-    }
-  }, [gameState, isEmotionDetectionActive]);
-
-  // Initialize emotion detection
-  const initializeEmotionDetection = async () => {
-    try {
-      // Enable camera preview to improve face detection
-      const success = await emotionDetectionService.startEmotionDetection(handleEmotionDetected, true);
-      if (success) {
-        setIsEmotionDetectionActive(true);
-        // Apply fast mode if enabled
-        if (fastMode) {
-          emotionDetectionService.enableFastMode();
-        } else {
-          emotionDetectionService.enableNormalMode();
-        }
-        console.log('🎯 Emotion detection initialized for Kitten Match Game');
-      }
-    } catch (error) {
-      console.error('❌ Failed to initialize emotion detection:', error);
-    }
-  };
-
-  // Toggle fast mode
-  useEffect(() => {
-    if (isEmotionDetectionActive) {
-      if (fastMode) {
-        emotionDetectionService.enableFastMode();
-      } else {
-        emotionDetectionService.enableNormalMode();
-      }
-    }
-  }, [fastMode, isEmotionDetectionActive]);
-
-  // Handle emotion detection results
-  const handleEmotionDetected = (emotionData) => {
-    const { emotion, confidence } = emotionData;
-    
-    console.log(`🎭 Emotion detected: ${emotion} (${Math.round(confidence * 100)}%)`);
-    
-    setCurrentEmotion(emotion);
-    
-    // Update theme based on emotion (always update for immediate visual feedback)
-    const newTheme = getThemeForEmotion(emotion);
-    console.log(`🎨 Changing theme to:`, newTheme);
-    setEmotionTheme(newTheme);
-    
-    // Show emotion feedback briefly only for high confidence or fast mode
-    if (confidence > 0.5 || fastMode) {
-      setShowEmotionFeedback(true);
-      setTimeout(() => setShowEmotionFeedback(false), fastMode ? 2000 : 3000);
-    }
-  };
-
-  // Test API connection
-  const testAPIConnection = async () => {
-    try {
-      const result = await emotionDetectionService.testAPIConnection();
-      if (result.success) {
-        alert('✅ API is working! ' + result.message);
-      } else {
-        alert('❌ API test failed: ' + result.message);
-      }
-    } catch (error) {
-      alert('❌ Error testing API: ' + error.message);
-    }
-  };
+    // Cleanup when component unmounts
+    return () => {
+      console.log('🧹 Cleaning up Kitten Match Game');
+    };
+  }, [gameState]);
 
   return (
     <div style={{
@@ -391,7 +478,7 @@ const KittenMatchGame = ({ onClose, user }) => {
       left: 0,
       width: '100vw',
       height: '100vh',
-      background: emotionTheme.colors.background || `linear-gradient(-45deg, ${emotionTheme.colors.primary}40, ${emotionTheme.colors.secondary}40, ${emotionTheme.colors.accent}40, ${currentThemeData.colors.frontSecondary}20)`,
+      background: emotionBackground || currentThemeData.background || `linear-gradient(-45deg, ${currentThemeData.colors.primary}40, ${currentThemeData.colors.secondary}40, ${currentThemeData.colors.frontSecondary}40, ${currentThemeData.colors.front}20)`,
       backgroundSize: '400% 400%',
       animation: 'gradientShift 15s ease infinite',
       transition: 'background 0.8s ease-in-out',
@@ -433,69 +520,165 @@ const KittenMatchGame = ({ onClose, user }) => {
         ← Back to Dashboard
       </button>
 
-      {/* Game Info */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
-        background: 'rgba(255, 255, 255, 0.9)',
-        borderRadius: '25px',
-        padding: '10px 20px',
-        fontSize: '16px',
-        fontWeight: '700',
-        color: '#333',
-        zIndex: 1001,
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-        display: 'flex',
-        gap: '15px',
-        alignItems: 'center'
-      }}>
-        <span>🐱 Level {level}</span>
-        <span>⭐ Score: {score}</span>
-        <span>🔥 Combo: {combo}</span>
-      </div>
-
-      {/* Emotion Feedback */}
-      {showEmotionFeedback && (
+      {/* Game Score - Centered at Top */}
+      {gameState === 'playing' && (
         <div style={{
           position: 'absolute',
-          top: '50%',
+          top: '20px',
           left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: `linear-gradient(45deg, ${emotionTheme.colors.primary}, ${emotionTheme.colors.secondary})`,
-          color: 'white',
-          padding: '20px 30px',
-          borderRadius: '20px',
-          fontSize: '18px',
-          fontWeight: 'bold',
-          zIndex: 1002,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-          animation: 'emotionPulse 3s ease-out',
-          textAlign: 'center'
+          transform: 'translateX(-50%)',
+          background: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: '25px',
+          padding: '10px 25px',
+          fontSize: '16px',
+          fontWeight: '700',
+          color: '#333',
+          zIndex: 1001,
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          display: 'flex',
+          gap: '15px',
+          alignItems: 'center'
         }}>
-          <div>{emotionTheme.particles}</div>
-          <div>Feeling {currentEmotion}!</div>
-          <div style={{ fontSize: '14px', opacity: 0.9 }}>{emotionTheme.description}</div>
+          <span>🐱 Level {level}</span>
+          <span style={{ borderLeft: '2px solid rgba(0,0,0,0.1)', paddingLeft: '15px' }}>⭐ Score: {score}</span>
+          <span style={{ borderLeft: '2px solid rgba(0,0,0,0.1)', paddingLeft: '15px' }}>🔥 Combo: {combo}</span>
         </div>
       )}
 
-      {/* Simple Theme Status */}
+      {/* Theme Status */}
       <div style={{
         position: 'absolute',
         bottom: '20px',
         left: '20px',
-        background: 'rgba(255, 255, 255, 0.9)',
+        background: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: '25px',
+        padding: '10px 18px',
+        fontSize: '15px',
         color: '#333',
-        padding: '8px 16px',
-        borderRadius: '20px',
-        fontSize: '14px',
-        fontWeight: '600',
         zIndex: 1001,
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-        border: '2px solid rgba(255, 255, 255, 0.8)'
+        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)'
       }}>
-        Theme is {emotionTheme.name}
+        {currentThemeData.name}
       </div>
+
+      {/* Webcam Toggle Button */}
+      {gameState === 'playing' && (
+        <button
+          onClick={toggleWebcam}
+          style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            background: showWebcam ? 'rgba(255, 100, 100, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+            border: 'none',
+            borderRadius: '50px',
+            padding: '12px',
+            fontSize: '16px',
+            color: '#333',
+            cursor: 'pointer',
+            zIndex: 1001,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            transition: 'all 0.3s ease'
+          }}
+          title={showWebcam ? "Hide webcam" : "Show webcam (for emotion detection)"}
+        >
+          <Camera size={24} />
+        </button>
+      )}
+      
+      {/* Webcam Component */}
+      {showWebcam && (
+        <div style={{
+          position: 'absolute',
+          bottom: '80px',
+          right: '20px',
+          width: '200px',
+          height: '150px',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
+          zIndex: 1001
+        }}>
+          <Webcam
+            ref={webcamRef}
+            audio={false}
+            width={200}
+            height={150}
+            screenshotFormat="image/jpeg"
+            videoConstraints={{
+              width: 200,
+              height: 150,
+              facingMode: "user"
+            }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          {isCapturing && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(255,255,255,0.2)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <div style={{ 
+                width: '10px', 
+                height: '10px', 
+                borderRadius: '50%', 
+                background: 'red',
+                animation: 'pulse 1s infinite' 
+              }}></div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Emotion Indicator */}
+      {showWebcam && emotion && (
+        <div style={{
+          position: 'absolute',
+          bottom: '80px',
+          right: '230px',
+          background: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: '15px',
+          padding: '10px 15px',
+          fontSize: '14px',
+          color: '#333',
+          zIndex: 1001,
+          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '5px'
+        }}>
+          <div style={{ fontWeight: 'bold' }}>Detected Emotion:</div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px' 
+          }}>
+            {emotion === 'happiness' && '😊'}
+            {emotion === 'sadness' && '😢'}
+            {emotion === 'anger' && '😠'}
+            {emotion === 'fear' && '😨'}
+            {emotion === 'surprise' && '😲'}
+            {emotion === 'neutral' && '😐'}
+            <span style={{ textTransform: 'capitalize' }}>{emotion}</span>
+            <span style={{ 
+              fontSize: '12px', 
+              opacity: 0.7 
+            }}>
+              {Math.round(emotionConfidence * 100)}%
+            </span>
+          </div>
+        </div>
+      )}
 
       <div style={{
         position: 'absolute',
@@ -523,19 +706,6 @@ const KittenMatchGame = ({ onClose, user }) => {
                   <Gamepad2 size={24} />
                   Start Game
                 </button>
-                <button className="action-btn secondary" onClick={testAPIConnection}>
-                  🔌 Test API
-                </button>
-              </div>
-              <div className="game-features">
-                <h3>✨ Game Features:</h3>
-                <ul>
-                  <li>🎮 Multiple difficulty levels</li>
-                  <li>🦆 6 different themed experiences</li>
-                  <li>🎉 Encouraging feedback for matches</li>
-                  <li>🏆 Score and combo system</li>
-                  <li>♿ Dyslexia-friendly design</li>
-                </ul>
               </div>
               
               <div className="theme-selector">
@@ -581,7 +751,14 @@ const KittenMatchGame = ({ onClose, user }) => {
         {/* Game Board */}
         {gameState === 'playing' && (
           <>
-            <div className="game-board">
+            {/* Timer Display */}
+            <div className="timer-display">
+              <div className="timer-circle">
+                <div className="timer-value">{timeLeft}</div>
+              </div>
+            </div>
+            
+            <div className="game-board" style={{ marginTop: '40px' }}>
               {cards.map(card => (
                 <div 
                   key={card.id} 
@@ -728,31 +905,8 @@ const KittenMatchGame = ({ onClose, user }) => {
           align-items: center;
         }
 
-        .game-features {
-          background: rgba(${currentThemeData.colors.primary.replace('#', '')}, 0.1);
-          border-radius: 15px;
-          padding: 1.5rem;
-          text-align: left;
-        }
-
-        .game-features h3 {
-          color: ${currentThemeData.colors.primary};
-          margin-bottom: 1rem;
-        }
-
-        .game-features ul {
-          list-style: none;
-          padding: 0;
-        }
-
-        .game-features li {
-          padding: 0.5rem 0;
-          color: #555;
-          font-weight: 600;
-        }
-
         .theme-selector {
-          margin-top: 1.5rem;
+          margin-top: 1rem;
           text-align: center;
         }
 
@@ -890,204 +1044,342 @@ const KittenMatchGame = ({ onClose, user }) => {
           margin-right: auto;
         }
 
+        .timer-display {
+          position: absolute;
+          top: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 1001;
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+        }
+
+        .timer-circle {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.9);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          position: relative;
+          z-index: 2;
+        }
+        
+        .timer-circle:before {
+          content: '';
+          position: absolute;
+          width: 66px;
+          height: 66px;
+          border-radius: 50%;
+          border: 3px solid #ff6b6b;
+          border-top-color: transparent;
+          animation: timerSpin 1s linear infinite;
+        }
+        
+        .timer-value {
+          font-size: 24px;
+          font-weight: bold;
+          color: #333;
+        }
+        
+        @keyframes timerSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .game-board {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          max-width: 500px;
+          margin: 0 auto;
+          perspective: 1000px;
+        }
+        
+        .card {
+          height: 100px;
+          background-color: #ff8e8e;
+          border-radius: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 2.5rem;
+          cursor: pointer;
+          transition: transform 0.6s, box-shadow 0.3s;
+          transform-style: preserve-3d;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          position: relative;
+        }
+        
+        .card:hover {
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          transform: translateY(-5px);
+        }
+        
+        .card.flipped {
+          transform: rotateY(180deg);
+        }
+        
+        .card:before, .card:after {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          border-radius: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        .card:before {
+          content: '?';
+          font-size: 2.5rem;
+          font-weight: bold;
+          color: white;
+        }
+        
+        .card:after {
+          content: attr(data-emoji);
+          transform: rotateY(180deg);
+        }
+        
+        .card.matched {
+          opacity: 0.8;
+          cursor: default;
+          animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+          0% { transform: scale(1) rotateY(180deg); }
+          50% { transform: scale(1.05) rotateY(180deg); }
+          100% { transform: scale(1) rotateY(180deg); }
+        }
+        
         .encouraging-message {
           position: fixed;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: linear-gradient(45deg, ${currentThemeData.colors.primary}, ${currentThemeData.colors.secondary});
-          color: white;
-          padding: 1rem 2rem;
-          border-radius: 25px;
-          font-size: 1.5rem;
-          font-weight: bold;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-          z-index: 1000;
-          animation: encourageAnimation 2s ease-out;
-          text-align: center;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-        }
-
-        @keyframes encourageAnimation {
-          0% { 
-            transform: translate(-50%, -50%) scale(0.5); 
-            opacity: 0; 
-          }
-          20% { 
-            transform: translate(-50%, -50%) scale(1.2); 
-            opacity: 1; 
-          }
-          40% { 
-            transform: translate(-50%, -50%) scale(1); 
-            opacity: 1; 
-          }
-          100% { 
-            transform: translate(-50%, -50%) scale(1); 
-            opacity: 0; 
-          }
-        }
-
-        .card {
-          aspect-ratio: 1;
-          border-radius: 15px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2.5rem;
-          color: white;
-          font-weight: bold;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-          border: 3px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .card:hover {
-          transform: scale(1.05);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .card.matched {
-          opacity: 0.8;
-          transform: scale(0.95);
-          animation: matchPulse 0.6s ease-out;
-        }
-
-        @keyframes matchPulse {
-          0% { transform: scale(0.95); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(0.95); }
-        }
-
-        .card-content {
-          font-size: 2.5rem;
-        }
-
-        .game-actions {
-          display: flex;
-          justify-content: center;
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .action-btn {
-          padding: 0.8rem 1.5rem;
-          border: none;
-          border-radius: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-family: inherit;
-          font-size: 1rem;
-        }
-
-        .action-btn.large {
-          padding: 1.2rem 2rem;
-          font-size: 1.1rem;
-          width: 250px;
-          justify-content: center;
-        }
-
-        .action-btn.primary {
-          background: linear-gradient(45deg, ${currentThemeData.colors.primary}, ${currentThemeData.colors.secondary});
-          color: white;
-          border: 2px solid transparent;
-        }
-
-        .action-btn.secondary {
           background: rgba(255, 255, 255, 0.9);
-          color: ${currentThemeData.colors.primary};
-          border: 2px solid ${currentThemeData.colors.primary};
+          padding: 15px 30px;
+          border-radius: 30px;
+          font-size: 24px;
+          font-weight: bold;
+          color: #333;
+          z-index: 1000;
+          animation: popIn 0.5s forwards;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          white-space: nowrap;
+        }
+        
+        @keyframes popIn {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
-        .action-btn:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        @keyframes pulse {
+          0% { opacity: 0.2; }
+          50% { opacity: 1; }
+          100% { opacity: 0.2; }
         }
-
-        .game-complete {
-          text-align: center;
-          padding: 2rem;
+      `}</style>
+      <style>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50% }
+          50% { background-position: 100% 50% }
+          100% { background-position: 0% 50% }
         }
-
-        .game-complete h3 {
-          font-size: 2rem;
-          color: ${currentThemeData.colors.primary};
-          margin-bottom: 1rem;
-          animation: celebrateText 1s ease-out;
+        
+        .timer-display {
+          position: relative;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 20px;
         }
-
-        @keyframes celebrateText {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); opacity: 1; }
+        
+        .timer-circle {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.9);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          position: relative;
+          z-index: 2;
         }
-
-        .complete-stats {
-          background: rgba(${currentThemeData.colors.primary.replace('#', '')}, 0.1);
-          border-radius: 15px;
-          padding: 1rem;
-          margin: 1rem 0;
+        
+        .timer-circle:before {
+          content: '';
+          position: absolute;
+          width: 66px;
+          height: 66px;
+          border-radius: 50%;
+          border: 3px solid #ff6b6b;
+          border-top-color: transparent;
+          animation: timerSpin 1s linear infinite;
         }
-
-        .complete-stats p {
-          margin: 0.5rem 0;
-          font-weight: 600;
+        
+        .timer-value {
+          font-size: 24px;
+          font-weight: bold;
           color: #333;
         }
-
-        .complete-actions {
+        
+        @keyframes timerSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .game-board {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          max-width: 500px;
+          margin: 0 auto;
+          perspective: 1000px;
+        }
+        
+        .card {
+          height: 100px;
+          background-color: #ff8e8e;
+          border-radius: 10px;
           display: flex;
-          gap: 1rem;
           justify-content: center;
-          flex-wrap: wrap;
-          margin-top: 2rem;
+          align-items: center;
+          font-size: 2.5rem;
+          cursor: pointer;
+          transition: transform 0.6s, box-shadow 0.3s;
+          transform-style: preserve-3d;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          position: relative;
+        }
+        
+        .card:hover {
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          transform: translateY(-5px);
+        }
+        
+        .card.flipped {
+          transform: rotateY(180deg);
+        }
+        
+        .card:before, .card:after {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          border-radius: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        .card:before {
+          content: '?';
+          font-size: 2.5rem;
+          font-weight: bold;
+          color: white;
+        }
+        
+        .card:after {
+          content: attr(data-emoji);
+          transform: rotateY(180deg);
+        }
+        
+        .card.matched {
+          opacity: 0.8;
+          cursor: default;
+          animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+          0% { transform: scale(1) rotateY(180deg); }
+          50% { transform: scale(1.05) rotateY(180deg); }
+          100% { transform: scale(1) rotateY(180deg); }
+        }
+        
+        .encouraging-message {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(255, 255, 255, 0.9);
+          padding: 15px 30px;
+          border-radius: 30px;
+          font-size: 24px;
+          font-weight: bold;
+          color: #333;
+          z-index: 1000;
+          animation: popIn 0.5s forwards;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          white-space: nowrap;
+        }
+        
+        @keyframes popIn {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-          .theme-options {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-          }
+        @keyframes pulse {
+          0% { opacity: 0.2; }
+          50% { opacity: 1; }
+          100% { opacity: 0.2; }
+        }
+      `}</style>
+      <style>{`
+        @keyframes webcamPulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
 
-          .theme-btn {
-            padding: 10px 12px;
-          }
+        .webcam-container {
+          position: absolute;
+          bottom: 80px;
+          right: 20px;
+          width: 200px;
+          height: 150px;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          z-index: 1001;
+          animation: webcamPulse 2s infinite;
+        }
 
-          .theme-emoji {
-            font-size: 1.5rem;
-          }
+        .webcam-container.hidden {
+          display: none;
+        }
 
-          .theme-name {
-            font-size: 0.8rem;
-          }
+        .webcam-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(255, 255, 255, 0.2);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
 
-          .game-container {
-            margin: 0;
-            padding: 1rem;
-          }
-
-          .game-board {
-            grid-template-columns: repeat(3, 1fr);
-            max-width: 300px;
-          }
-
-          .card {
-            font-size: 2rem;
-          }
-
-          .action-btn.large {
-            width: 100%;
-          }
-
-          .complete-actions {
-            flex-direction: column;
-            align-items: center;
-          }
+        .webcam-indicator {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: red;
+          animation: pulse 1s infinite;
         }
       `}</style>
       </div>

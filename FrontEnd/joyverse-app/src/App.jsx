@@ -9,10 +9,12 @@ import {
   LoginPage,
   ChildDashboard,
   TherapistDashboard,
+  SuperAdminDashboard,
   KittenMatchGamePage,
   MissingLetterPopPage,
   ArtStudioPage,
-  SpaceMathGamePage
+  SpaceMathGamePage,
+  MusicFunPage
 } from './pages';
 
 // Protected Route Component
@@ -64,6 +66,10 @@ const DashboardRedirect = () => {
     return <Navigate to="/" replace />;
   }
   
+  if (user.userType === 'superadmin') {
+    return <Navigate to="/superadmin-dashboard" replace />;
+  }
+  
   return <Navigate to={`/${user.userType}-dashboard`} replace />;
 };
 
@@ -93,6 +99,15 @@ const JoyverseAppContent = () => {
           element={
             <ProtectedRoute requiredUserType="therapist">
               <TherapistDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/superadmin-dashboard" 
+          element={
+            <ProtectedRoute requiredUserType="superadmin">
+              <SuperAdminDashboard />
             </ProtectedRoute>
           } 
         />
@@ -127,6 +142,14 @@ const JoyverseAppContent = () => {
           element={
             <ProtectedRoute requiredUserType="child">
               <SpaceMathGamePage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/games/music-fun" 
+          element={
+            <ProtectedRoute requiredUserType="child">
+              <MusicFunPage />
             </ProtectedRoute>
           } 
         />

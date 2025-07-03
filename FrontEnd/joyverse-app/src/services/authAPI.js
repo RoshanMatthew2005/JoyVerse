@@ -132,7 +132,80 @@ export const authAPI = {
     });
     
     return await handleResponse(response);
-  }
+  },
+
+  // SuperAdmin login
+  loginSuperAdmin: async (email, password) => {
+    const response = await fetch(`${API_BASE_URL}/login/superadmin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await handleResponse(response);
+    
+    // Store token and user data
+    if (data.token) {
+      localStorage.setItem('joyverse_token', data.token);
+      localStorage.setItem('joyverse_user', JSON.stringify(data.user));
+    }
+    
+    return data;
+  },
+
+  // SuperAdmin - Create new therapist account
+  createTherapistAccount: async (therapistData) => {
+    const response = await fetch(`${API_BASE_URL}/superadmin/create-therapist`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(therapistData)
+    });
+    
+    return await handleResponse(response);
+  },
+
+  // SuperAdmin - Create new child account
+  createChildAccount: async (childData) => {
+    const response = await fetch(`${API_BASE_URL}/superadmin/create-child`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(childData)
+    });
+    
+    return await handleResponse(response);
+  },
+
+  // SuperAdmin - Get all users
+  getAllUsers: async () => {
+    const response = await fetch(`${API_BASE_URL}/superadmin/users`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    return await handleResponse(response);
+  },
+
+  // SuperAdmin - Verify therapist
+  verifyTherapist: async (therapistId) => {
+    const response = await fetch(`${API_BASE_URL}/superadmin/verify-therapist/${therapistId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders()
+    });
+    
+    return await handleResponse(response);
+  },
+
+  // SuperAdmin - Delete user account
+  deleteUserAccount: async (userId) => {
+    const response = await fetch(`${API_BASE_URL}/superadmin/delete-user/${userId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    return await handleResponse(response);
+  },
 };
 
 export default authAPI;

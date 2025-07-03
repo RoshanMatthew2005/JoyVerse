@@ -24,6 +24,36 @@ const TherapistDashboard = ({ handleLogout }) => {
       fetchChildrenData();
     }
   }, [user]);
+
+  // Prevent scroll issues when comments section is active
+  useEffect(() => {
+    if (showCommentsFor || editingComment) {
+      // Store original scroll behavior
+      const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+      
+      // Set smooth scrolling off to prevent jumping
+      document.documentElement.style.scrollBehavior = 'auto';
+      
+      // Cleanup when comments section is closed
+      return () => {
+        document.documentElement.style.scrollBehavior = originalScrollBehavior;
+      };
+    }
+  }, [showCommentsFor, editingComment]);
+
+  // Load comments from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedComments = localStorage.getItem('therapist-comments');
+      if (savedComments) {
+        const parsedComments = JSON.parse(savedComments);
+        console.log('💾 Loaded comments from localStorage:', parsedComments);
+        setComments(parsedComments);
+      }
+    } catch (error) {
+      console.error('❌ Error loading comments from localStorage:', error);
+    }
+  }, []);
   const fetchChildrenData = async () => {
     try {
       setLoading(true);
@@ -442,6 +472,17 @@ const TherapistDashboard = ({ handleLogout }) => {
           <textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
+            onFocus={(e) => {
+              // Prevent scroll jumping when focusing textarea
+              e.preventDefault();
+              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+              e.target.focus();
+              window.scrollTo(0, scrollTop);
+            }}
+            onKeyDown={(e) => {
+              // Prevent unwanted scroll behavior
+              e.stopPropagation();
+            }}
             placeholder="Add a therapeutic note or observation..."
             className="therapist-comment-input"
             rows={3}
@@ -486,6 +527,17 @@ const TherapistDashboard = ({ handleLogout }) => {
                     <textarea
                       value={editCommentText}
                       onChange={(e) => setEditCommentText(e.target.value)}
+                      onFocus={(e) => {
+                        // Prevent scroll jumping when focusing textarea
+                        e.preventDefault();
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                        e.target.focus();
+                        window.scrollTo(0, scrollTop);
+                      }}
+                      onKeyDown={(e) => {
+                        // Prevent unwanted scroll behavior
+                        e.stopPropagation();
+                      }}
                       className="therapist-comment-input"
                       rows={3}
                     />

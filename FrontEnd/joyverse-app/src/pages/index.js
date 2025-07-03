@@ -5,9 +5,11 @@ export { default as ChildSignUp } from './ChildSignUp';
 export { default as LoginPage } from './LoginPage';
 export { default as ChildDashboard } from './ChildDashboard';
 export { default as TherapistDashboard } from './TherapistDashboard';
+export { default as SuperAdminDashboard } from './SuperAdminDashboard';
 
 // Game Pages
 export { default as KittenMatchGamePage } from './KittenMatchGamePage';
 export { default as MissingLetterPopPage } from './MissingLetterPopPage';
 export { default as ArtStudioPage } from './ArtStudioPage';
 export { default as SpaceMathGamePage } from './SpaceMathGamePage';
+export { default as MusicFunPage } from './MusicFunPage';

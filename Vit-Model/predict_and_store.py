@@ -31,7 +31,7 @@ collection = db["emotion_predictions"]             # Access 'emotion_predictions
 
 # Load the trained model
 model = VisionTransformerWithLandmarks().to(device)    # Instantiate model and move to device
-model.load_state_dict(torch.load("best_model_5class.pth", map_location=device))  # Load weights
+model.load_state_dict(torch.load("best_model.pth", map_location=device))  # Load weights
 model.eval()                                           # Set model to evaluation mode
 
 transform = get_test_transforms()                  # Get image transforms

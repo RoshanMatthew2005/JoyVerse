@@ -1,27 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import MissingLetterPop from '../components/games/MissingLetterPop';
-import emotionDetectionService from '../services/emotionAPI';
 
 const MissingLetterPopPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const handleGameClose = () => {
-    // Ensure emotion detection is stopped when leaving the game
-    console.log('🚪 Leaving Missing Letter Pop Game, stopping emotion detection');
-    emotionDetectionService.stopEmotionDetection();
     navigate('/child-dashboard');
   };
-
-  // Cleanup on component unmount (browser back button, etc.)
-  useEffect(() => {
-    return () => {
-      console.log('🧹 MissingLetterPopPage unmounting, stopping emotion detection');
-      emotionDetectionService.stopEmotionDetection();
-    };
-  }, []);
 
   return (
     <div style={{
@@ -30,11 +18,9 @@ const MissingLetterPopPage = () => {
       left: 0,
       width: '100vw',
       height: '100vh',
-      background: 'linear-gradient(-45deg, #54a0ff, #5f27cd, #00d2d3, #ff9ff3)',
-      backgroundSize: '400% 400%',
-      animation: 'gradientShift 15s ease infinite',
+      background: 'black',
       overflow: 'hidden',
-      zIndex: 1000
+      zIndex: 1
     }}>
       {/* Floating Back Button */}
       <button
@@ -51,7 +37,7 @@ const MissingLetterPopPage = () => {
           fontWeight: '600',
           color: '#333',
           cursor: 'pointer',
-          zIndex: 1001,
+          zIndex: 9999999,
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
@@ -81,7 +67,7 @@ const MissingLetterPopPage = () => {
         fontSize: '18px',
         fontWeight: '700',
         color: '#333',
-        zIndex: 1001,
+        zIndex: 9999999,
         boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
       }}>
         🔤 Missing Letter Pop
@@ -90,7 +76,12 @@ const MissingLetterPopPage = () => {
       {/* Full Screen Game */}
       <div style={{
         width: '100%',
-        height: '100%'
+        height: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        zIndex: 2,
+        pointerEvents: 'auto'
       }}>
         <MissingLetterPop 
           onClose={handleGameClose}

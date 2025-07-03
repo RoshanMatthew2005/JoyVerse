@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Palette, Eraser, Download, RotateCcw, Circle, Square, Minus, Plus } from 'lucide-react';
 import './artstudio.css';
 import gameScoreService from '../../../services/gameScoreAPI';
-import emotionDetectionService from '../../../services/emotionAPI';
-import { getThemeForEmotion, emotionThemes } from '../../../utils/emotionThemes';
 
 const ArtStudio = ({ onClose, user }) => {
   const canvasRef = useRef(null);
@@ -17,28 +15,10 @@ const ArtStudio = ({ onClose, user }) => {
   const [stickersAdded, setStickersAdded] = useState(0);
   const [artworkSaved, setArtworkSaved] = useState(false);
   
-  // Emotion detection states
-  const [currentEmotion, setCurrentEmotion] = useState('happiness');
-  const [emotionTheme, setEmotionTheme] = useState(getThemeForEmotion('happiness'));
-  const [isEmotionDetectionActive, setIsEmotionDetectionActive] = useState(false);
-  const [showEmotionFeedback, setShowEmotionFeedback] = useState(false);
-  
-  // Emotion-based colors for kids
-  const getEmotionColors = (emotion) => {
-    const theme = getThemeForEmotion(emotion);
-    const baseColors = [
-      theme.colors.primary,
-      theme.colors.secondary,
-      theme.colors.accent,
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-      '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
-      '#10AC84', '#EE5A24', '#0984E3', '#A29BFE', '#6C5CE7',
-      '#FD79A8', '#E17055', '#00B894', '#FDCB6E', '#E84393'
-    ];
-    return baseColors;
-  };
-  
-  const colors = getEmotionColors(currentEmotion);
+  // Default colors for kids
+  const defaultColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
+  ];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,55 +28,19 @@ const ArtStudio = ({ onClose, user }) => {
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     
-    // Set background with emotion theme
-    ctx.fillStyle = emotionTheme.colors.background || 'white';
+    // Set background to white
+    ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Set initial drawing properties
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-
-    // Initialize emotion detection
-    initializeEmotionDetection();
     
     // Cleanup when component unmounts
     return () => {
-      if (isEmotionDetectionActive) {
-        console.log('🧹 Cleaning up emotion detection for Art Studio');
-        emotionDetectionService.stopEmotionDetection();
-      }
+      console.log('🧹 Cleaning up Art Studio');
     };
   }, []);
-
-  // Initialize emotion detection
-  const initializeEmotionDetection = async () => {
-    try {
-      const success = await emotionDetectionService.startEmotionDetection(handleEmotionDetected, false);
-      if (success) {
-        setIsEmotionDetectionActive(true);
-        console.log('🎯 Emotion detection initialized for Art Studio');
-      }
-    } catch (error) {
-      console.error('❌ Failed to initialize emotion detection:', error);
-    }
-  };
-
-  // Handle emotion detection results
-  const handleEmotionDetected = (emotionData) => {
-    const { emotion, confidence } = emotionData;
-    
-    console.log(`🎭 Emotion detected in Art Studio: ${emotion} (${Math.round(confidence * 100)}%)`);
-    
-    setCurrentEmotion(emotion);
-    
-    // Update theme based on emotion
-    const newTheme = getThemeForEmotion(emotion);
-    setEmotionTheme(newTheme);
-    
-    // Show emotion feedback briefly
-    setShowEmotionFeedback(true);
-    setTimeout(() => setShowEmotionFeedback(false), 3000);
-  };
 
   const startDrawing = (e) => {
     setIsDrawing(true);
@@ -141,7 +85,7 @@ const ArtStudio = ({ onClose, user }) => {
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = emotionTheme.colors.background || 'white';
+    ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };  const downloadArt = async () => {
     const canvas = canvasRef.current;
@@ -178,13 +122,6 @@ const ArtStudio = ({ onClose, user }) => {
 
   // Save score when closing if session was long enough
   const handleClose = async () => {
-    // Stop emotion detection
-    if (isEmotionDetectionActive) {
-      console.log('🎮 Art Studio ended, stopping emotion detection');
-      emotionDetectionService.stopEmotionDetection();
-      setIsEmotionDetectionActive(false);
-    }
-    
     const timeSpent = Math.round((Date.now() - sessionStartTime) / 1000);
     if (timeSpent > 30) { // Only save if they spent more than 30 seconds
       await saveArtScore();
@@ -209,73 +146,21 @@ const ArtStudio = ({ onClose, user }) => {
 
   return (
     <div className="art-studio-overlay" style={{
-      background: emotionTheme.colors.background || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
-      {/* Emotion Theme Change Feedback */}
-      {showEmotionFeedback && (
-        <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: `linear-gradient(45deg, ${emotionTheme.colors.accent}, ${emotionTheme.colors.primary})`,
-          color: 'white',
-          padding: '1.5rem 2rem',
-          borderRadius: '20px',
-          textAlign: 'center',
-          zIndex: 1000,
-          animation: 'emotionFeedback 3s ease-out forwards',
-          fontSize: '1.2rem',
-          fontWeight: 'bold',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-          border: '3px solid rgba(255, 255, 255, 0.3)'
-        }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-            {emotionThemes[currentEmotion]?.particles || '🎯'}
-          </div>
-          <div>Art colors changed to match your mood!</div>
-          <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.5rem' }}>
-            {emotionTheme.description}
-          </div>
-        </div>
-      )}
-
-      {/* Current Emotion Display */}
-      {isEmotionDetectionActive && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          background: 'rgba(255, 255, 255, 0.15)',
-          borderRadius: '15px',
-          padding: '0.8rem 1rem',
-          backdropFilter: 'blur(10px)',
-          border: '2px solid rgba(255, 255, 255, 0.2)',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          zIndex: 100,
-          color: 'white'
-        }}>
-          <span style={{ fontSize: '1.2rem' }}>{emotionThemes[currentEmotion]?.particles || '🎯'}</span>
-          <span>Mood: {currentEmotion}</span>
-        </div>
-      )}
 
       <div className="art-studio-container" style={{
         background: 'rgba(255, 255, 255, 0.95)',
-        color: emotionTheme.colors.text || '#333'
+        color: '#333'
       }}>
         {/* Header */}
         <div className="art-studio-header" style={{
-          background: `linear-gradient(45deg, ${emotionTheme.colors.primary}, ${emotionTheme.colors.accent})`,
+          background: 'linear-gradient(45deg, #667eea, #764ba2)',
           color: 'white'
         }}>
           <h2>🎨 Art Studio</h2>
-          <p>Create amazing artwork, {user?.childName || 'Artist'}! {emotionThemes[currentEmotion]?.particles || '🌟'}</p>
+          <p>Create amazing artwork, {user?.childName || 'Artist'}! 🌟</p>
           <button className="close-btn" onClick={handleClose} style={{
             background: 'rgba(255, 255, 255, 0.2)',
             color: 'white',
@@ -318,7 +203,7 @@ const ArtStudio = ({ onClose, user }) => {
             {/* Colors */}
             <div className="tool-section">
               <h4>🎨 Colors</h4>
-              <div className="color-palette">                {colors.slice(0, 10).map((color, index) => (
+              <div className="color-palette">                {defaultColors.map((color, index) => (
                   <button
                     key={index}
                     className={`color-btn ${currentColor === color ? 'active' : ''}`}
@@ -329,28 +214,7 @@ const ArtStudio = ({ onClose, user }) => {
                     }}
                   />
                 ))}
-                <button 
-                  className="color-btn more-colors"
-                  onClick={() => setShowColorPicker(!showColorPicker)}
-                >
-                  +
-                </button>
               </div>
-              
-              {showColorPicker && (
-                <div className="extended-palette">                  {colors.slice(10).map((color, index) => (
-                    <button
-                      key={index}
-                      className={`color-btn ${currentColor === color ? 'active' : ''}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => {
-                        setCurrentColor(color);
-                        setColorsUsed(prev => new Set([...prev, color]));
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Brush Size */}
@@ -427,21 +291,12 @@ const ArtStudio = ({ onClose, user }) => {
 
         {/* Fun Encouragement */}
         <div className="encouragement" style={{
-          background: `linear-gradient(45deg, ${emotionTheme.colors.secondary}, ${emotionTheme.colors.accent})`,
+          background: 'linear-gradient(45deg, #667eea, #764ba2)',
           color: 'white'
         }}>
-          <p>{emotionThemes[currentEmotion]?.particles || '🌟'} You're such a talented artist! Keep creating amazing things! 🎨</p>
+          <p>🌟 You're such a talented artist! Keep creating amazing things! 🎨</p>
         </div>
       </div>
-
-      {/* CSS Animations */}
-      <style jsx>{`
-        @keyframes emotionFeedback {
-          0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
-          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 };

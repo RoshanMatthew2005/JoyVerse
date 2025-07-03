@@ -52,16 +52,32 @@ class EmotionDetectionService {
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       console.log(`📹 Found ${videoDevices.length} video devices:`, videoDevices.map(d => d.label || 'Unknown'));
       
-      // Request camera access with fresh permission request
-      console.log('🚀 Requesting camera stream...');
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640, min: 320 },
-          height: { ideal: 480, min: 240 },
-          facingMode: 'user',
-          frameRate: { ideal: 30, min: 15 }
-        }
-      });
+      // Request camera access with fresh permission request - explicitly request higher resolution
+      console.log('🚀 Requesting camera stream with optimal settings...');
+      
+      // Try with HD resolution first
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            facingMode: 'user',
+            frameRate: { ideal: 30, min: 15 }
+          }
+        });
+        console.log('✅ HD camera stream acquired successfully');
+      } catch (err) {
+        console.warn('⚠️ Could not get HD stream, falling back to standard definition:', err);
+        // Fallback to lower resolution
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 640, min: 320 },
+            height: { ideal: 480, min: 240 },
+            facingMode: 'user'
+          }
+        });
+        console.log('✅ SD camera stream acquired as fallback');
+      }
 
       console.log('✅ Camera permission granted, stream acquired');
       console.log('📊 Stream details:', {
@@ -77,12 +93,20 @@ class EmotionDetectionService {
       this.videoElement.autoplay = true;
       this.videoElement.muted = true;
       this.videoElement.playsInline = true;
+      
+      // Explicitly call play() to ensure autoplay works
+      try {
+        await this.videoElement.play();
+        console.log('▶️ Video playback started explicitly');
+      } catch (playError) {
+        console.error('❌ Error starting video playback:', playError);
+      }
 
       // Create canvas for capture with higher resolution
       console.log('🖼️ Creating canvas...');
       this.canvas = document.createElement('canvas');
-      this.canvas.width = 640;
-      this.canvas.height = 480;
+      this.canvas.width = 1280;  // Start with larger canvas
+      this.canvas.height = 720;
 
       // Wait for video to be ready
       console.log('⏳ Waiting for video to load...');
@@ -115,6 +139,19 @@ class EmotionDetectionService {
 
       console.log('🎥 Starting capture and analysis...');
       this.isCapturing = true;
+      
+      // First do an immediate test capture
+      console.log('🧪 Doing immediate test capture...');
+      try {
+        const testResult = await this.captureAndAnalyze();
+        if (testResult) {
+          console.log('✅ Test capture successful:', testResult);
+        } else {
+          console.warn('⚠️ Test capture returned no results');
+        }
+      } catch (testError) {
+        console.error('❌ Test capture failed:', testError);
+      }
       
       // Wait 2 seconds before starting capture to let user get positioned
       console.log('⏱️ Waiting 2 seconds for user positioning...');
@@ -163,9 +200,9 @@ class EmotionDetectionService {
         position: fixed;
         top: 80px;
         right: 20px;
-        width: 250px;
-        height: 200px;
-        border: 3px solid #4CAF50;
+        width: 320px;
+        height: 240px;
+        border: 5px solid #4CAF50;
         border-radius: 15px;
         overflow: hidden;
         z-index: 10000;
@@ -177,24 +214,22 @@ class EmotionDetectionService {
       const instruction = document.createElement('div');
       instruction.style.cssText = `
         position: absolute;
-        top: -60px;
+        bottom: 0;
         left: 0;
         right: 0;
-        background: rgba(0,0,0,0.9);
+        background: rgba(0,0,0,0.7);
         color: white;
         padding: 10px;
         font-size: 14px;
         text-align: center;
-        border-radius: 10px;
         font-family: Arial, sans-serif;
         font-weight: bold;
+        z-index: 10002;
       `;
       instruction.innerHTML = `
-        <div>📹 Position Your Face Clearly</div>
+        <div>📹 Position Your Face in Center</div>
         <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
-          • Look directly at camera<br>
-          • Ensure good lighting<br>
-          • Keep face centered
+          Good lighting and face clearly visible
         </div>
       `;
       
@@ -202,15 +237,14 @@ class EmotionDetectionService {
       this.statusIndicator = document.createElement('div');
       this.statusIndicator.style.cssText = `
         position: absolute;
-        top: 5px;
-        left: 5px;
-        right: 5px;
+        top: 0;
+        left: 0;
+        right: 0;
         background: rgba(244, 67, 54, 0.9);
         color: white;
-        padding: 5px;
-        font-size: 12px;
+        padding: 8px;
+        font-size: 14px;
         text-align: center;
-        border-radius: 5px;
         font-family: Arial, sans-serif;
         font-weight: bold;
         z-index: 10001;
@@ -230,15 +264,38 @@ class EmotionDetectionService {
       this.previewVideo.muted = true;
       this.previewVideo.playsInline = true;
       
-      this.previewContainer.appendChild(instruction);
-      this.previewContainer.appendChild(this.statusIndicator);
+      // Add close button
+      const closeButton = document.createElement('button');
+      closeButton.style.cssText = `
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: none;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10003;
+      `;
+      closeButton.innerHTML = '×';
+      closeButton.onclick = () => this.removePreviewFromDOM();
+      
       this.previewContainer.appendChild(this.previewVideo);
+      this.previewContainer.appendChild(this.statusIndicator);
+      this.previewContainer.appendChild(instruction);
+      this.previewContainer.appendChild(closeButton);
       document.body.appendChild(this.previewContainer);
       
-      // Auto-hide preview after 60 seconds (longer for debugging)
+      // Auto-hide preview after 3 minutes
       this.previewTimeout = setTimeout(() => {
         this.removePreviewFromDOM();
-      }, 60000);
+      }, 180000);
       
       console.log('📹 Enhanced camera preview added to DOM');
     }
@@ -306,29 +363,120 @@ class EmotionDetectionService {
         return;
       }
       
-      ctx.drawImage(this.videoElement, 0, 0, this.canvas.width, this.canvas.height);
+      // Ensure proper canvas dimensions match video dimensions
+      this.canvas.width = this.videoElement.videoWidth || 640;
+      this.canvas.height = this.videoElement.videoHeight || 480;
+      
+      // Log dimensions for debugging
+      console.log('📐 Canvas dimensions:', this.canvas.width, 'x', this.canvas.height);
+      console.log('📐 Video dimensions:', this.videoElement.videoWidth, 'x', this.videoElement.videoHeight);
+      
+      // Clear canvas before drawing
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      
+      // Draw the video frame to canvas with proper dimensions
+      ctx.drawImage(
+        this.videoElement,
+        0, 0, this.videoElement.videoWidth, this.videoElement.videoHeight,
+        0, 0, this.canvas.width, this.canvas.height
+      );
       console.log('🖼️ Image drawn to canvas');
       
-      // Convert canvas to blob with higher quality
+      // Debugging: draw a red border to show capture area
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(0, 0, this.canvas.width, this.canvas.height);
+      
+      // Force a high quality capture
       const blob = await new Promise(resolve => {
         this.canvas.toBlob(resolve, 'image/jpeg', 0.95);
       });
 
       if (blob) {
         console.log('✅ Image blob created, size:', blob.size, 'bytes');
+        
+        // For debugging - save blob to a variable to inspect
+        this.lastCapturedBlob = blob;
+        
+        // Create temporary URL for debugging
+        if (this.showPreview) {
+          const imageUrl = URL.createObjectURL(blob);
+          this.updateDebugImage(imageUrl);
+        }
+        
         const emotion = await this.sendImageToAPI(blob);
         if (emotion) {
           console.log('🎭 Emotion result received:', emotion);
           this.processEmotionResult(emotion);
+          return emotion;
         } else {
           console.warn('⚠️ No emotion result from API');
+          return null;
         }
       } else {
         console.error('❌ Failed to create image blob');
+        return null;
       }
     } catch (error) {
       console.error('❌ Error capturing and analyzing image:', error);
+      return null;
     }
+  }
+
+  // Add debug image to preview
+  updateDebugImage(imageUrl) {
+    // Only add if preview is visible
+    if (!this.previewContainer) return;
+    
+    // Remove any existing debug image
+    if (this.debugImage && this.debugImage.parentNode) {
+      this.debugImage.parentNode.removeChild(this.debugImage);
+    }
+    
+    // Create a new debug image
+    this.debugImage = document.createElement('div');
+    this.debugImage.style.cssText = `
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 120px;
+      height: 90px;
+      border: 2px solid yellow;
+      background-color: black;
+      background-image: url(${imageUrl});
+      background-size: cover;
+      background-position: center;
+      z-index: 10002;
+      opacity: 0.8;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    `;
+    
+    this.debugImage.title = "Last captured image";
+    
+    // Add a label
+    const label = document.createElement('div');
+    label.style.cssText = `
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 2px;
+      font-size: 9px;
+      text-align: center;
+    `;
+    label.textContent = "Captured Image";
+    this.debugImage.appendChild(label);
+    
+    // Add to preview container
+    this.previewContainer.appendChild(this.debugImage);
+    
+    // Clean up URL after a delay
+    setTimeout(() => {
+      URL.revokeObjectURL(imageUrl);
+    }, 5000);
   }
 
   // Send image to ViT model API
@@ -341,31 +489,56 @@ class EmotionDetectionService {
       });
 
       const formData = new FormData();
-      formData.append('file', imageBlob, 'capture.jpg');
+      formData.append('file', imageBlob, `capture_${Date.now()}.jpg`);
+      // Add debug flag to help with troubleshooting
+      formData.append('debug', 'true');
+
+      // Increase timeout to 10 seconds to allow for longer API processing
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(`${this.vitApiUrl}/predict`, {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
+        headers: {
+          'X-Client-Timestamp': Date.now().toString(),
+          'X-Client-Id': 'joyverse-webapp'
+        }
       });
 
+      clearTimeout(timeoutId);
       console.log('📥 API Response status:', response.status);
 
       if (response.ok) {
-        const result = await response.json();
-        console.log('🎯 Emotion detected:', result);
-        
-        // Update preview status based on result
-        if (result.note && result.note.includes('no face detected')) {
-          this.updatePreviewStatus('❌ No face detected - please adjust position', false);
-        } else if (result.confidence < 0.3) {
-          this.updatePreviewStatus('⚠️ Low confidence - improve lighting/position', false);
-        } else {
-          this.updatePreviewStatus(`✅ ${result.emotion} detected (${Math.round(result.confidence * 100)}%)`, true);
+        // Try to parse the JSON response
+        try {
+          const result = await response.json();
+          console.log('🎯 Emotion detected:', result);
+          
+          // Update preview status based on result
+          if (result.note && result.note.includes('no face detected')) {
+            this.updatePreviewStatus('❌ No face detected - please adjust position', false);
+          } else if (result.confidence < 0.3) {
+            this.updatePreviewStatus('⚠️ Low confidence - improve lighting/position', false);
+          } else {
+            this.updatePreviewStatus(`✅ ${result.emotion} detected (${Math.round(result.confidence * 100)}%)`, true);
+          }
+          
+          return result;
+        } catch (jsonError) {
+          console.error('❌ Error parsing API response JSON:', jsonError);
+          this.updatePreviewStatus('❌ API response format error', false);
+          return null;
+        }
+      } else {
+        let errorData = '';
+        try {
+          errorData = await response.text();
+        } catch (textError) {
+          errorData = 'Could not read error response';
         }
         
-        return result;
-      } else {
-        const errorData = await response.text();
         console.warn('⚠️ API Error:', {
           status: response.status,
           statusText: response.statusText,
@@ -383,6 +556,13 @@ class EmotionDetectionService {
       }
     } catch (error) {
       console.error('❌ Error sending image to API:', error);
+      
+      if (error.name === 'AbortError') {
+        this.updatePreviewStatus('❌ API request timed out', false);
+      } else {
+        this.updatePreviewStatus('❌ Network error - check connection', false);
+      }
+      
       return null;
     }
   }

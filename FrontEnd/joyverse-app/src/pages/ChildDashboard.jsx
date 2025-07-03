@@ -74,7 +74,7 @@ const ChildDashboard = () => {
       color: '#96ceb4',
       icon: Music,
       emoji: '🎵',
-      onClick: () => alert('🎵 Music activities coming soon! Keep singing!')
+      onClick: () => navigate('/games/music-fun')
     }
   ];
 

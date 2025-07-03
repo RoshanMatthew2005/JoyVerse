@@ -43,7 +43,7 @@ except Exception as e:
 
 # MongoDB setup
 try:
-    client = MongoClient("mongodb+srv://joyadmin:joy123@joyverse.wh2ssu9.mongodb.net/joyverse?retryWrites=true&w=majority&appName=JoyVerse", serverSelectionTimeoutMS=5000)
+    client = MongoClient("mongodb://localhost:27017/joyverse", serverSelectionTimeoutMS=5000)
     client.server_info()
     db = client["joyverse"]  # Use the same database as the main backend
     collection = db["emotion_predictions"]  # Use (or create) 'emotion_predictions' collection
@@ -214,4 +214,4 @@ def test():
 # Run the server
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

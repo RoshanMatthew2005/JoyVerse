@@ -5,9 +5,13 @@ import './App.css';
 
 const TherapistDashboard = () => {
   const [selectedChild, setSelectedChild] = useState(null);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [tempNotes, setTempNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(true); // Track if notes are saved
+  const [autoSaveTimer, setAutoSaveTimer] = useState(null); // For auto-save functionality
 
   // Sample data for dyslexic children
-  const childrenData = [
+  const [childrenData, setChildrenData] = useState([
     {
       id: 1,
       name: 'Emma Johnson',
@@ -20,6 +24,7 @@ const TherapistDashboard = () => {
       overallProgress: 82,
       strengths: ['Visual Memory', 'Pattern Recognition'],
       challenges: ['Mathematical Processing', 'Time Management'],
+      therapistNotes: 'Emma shows excellent visual processing abilities. Continue focusing on math confidence-building exercises. Consider shorter session durations to improve attention span.',
       progressData: [
         { week: 'Week 1', score: 65 },
         { week: 'Week 2', score: 70 },
@@ -39,6 +44,7 @@ const TherapistDashboard = () => {
       overallProgress: 80,
       strengths: ['Logical Thinking', 'Problem Solving'],
       challenges: ['Visual Processing', 'Attention Span'],
+      therapistNotes: 'Oliver demonstrates strong mathematical reasoning. Focus on visual-spatial exercises and implement attention-building strategies. Consider breaks every 15 minutes.',
       progressData: [
         { week: 'Week 1', score: 60 },
         { week: 'Week 2', score: 68 },
@@ -58,6 +64,7 @@ const TherapistDashboard = () => {
       overallProgress: 86,
       strengths: ['Quick Processing', 'Visual Memory'],
       challenges: ['Mathematical Concepts', 'Sequential Processing'],
+      therapistNotes: 'Sophia excels in visual tasks but struggles with math concepts. Recommend multi-sensory math approaches and sequential processing games. Very motivated learner.',
       progressData: [
         { week: 'Week 1', score: 70 },
         { week: 'Week 2', score: 76 },
@@ -77,6 +84,7 @@ const TherapistDashboard = () => {
       overallProgress: 78,
       strengths: ['Persistence', 'Analytical Skills'],
       challenges: ['Processing Speed', 'Working Memory'],
+      therapistNotes: 'Lucas shows good persistence and steady improvement. Focus on processing speed exercises and working memory training. Consider memory aids and organizational strategies.',
       progressData: [
         { week: 'Week 1', score: 62 },
         { week: 'Week 2', score: 69 },
@@ -84,7 +92,98 @@ const TherapistDashboard = () => {
         { week: 'Week 4', score: 78 }
       ]
     }
-  ];
+  ]);
+
+  // Functions for notes editing
+  const startEditingNotes = (child) => {
+    setEditingNotes(true);
+    setTempNotes(child.therapistNotes || '');
+    setNotesSaved(true);
+  };
+
+  const saveNotes = () => {
+    if (selectedChild) {
+      setChildrenData(prevData => 
+        prevData.map(child => 
+          child.id === selectedChild.id 
+            ? { ...child, therapistNotes: tempNotes }
+            : child
+        )
+      );
+      setSelectedChild(prev => ({ ...prev, therapistNotes: tempNotes }));
+      setNotesSaved(true);
+      
+      // Show save indicator
+      const saveIndicator = document.createElement('div');
+      saveIndicator.className = 'save-indicator';
+      saveIndicator.innerText = 'Notes Saved ✓';
+      document.body.appendChild(saveIndicator);
+      
+      setTimeout(() => {
+        document.body.removeChild(saveIndicator);
+      }, 2000);
+    }
+  };
+
+  const autoSaveNotes = () => {
+    if (selectedChild && !notesSaved) {
+      saveNotes();
+    }
+  };
+
+  const handleNotesChange = (e) => {
+    setTempNotes(e.target.value);
+    setNotesSaved(false);
+    
+    // Clear any existing auto-save timer
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+    
+    // Set new auto-save timer (save after 3 seconds of inactivity)
+    const timer = setTimeout(() => {
+      autoSaveNotes();
+    }, 3000);
+    
+    setAutoSaveTimer(timer);
+  };
+
+  const cancelEditingNotes = () => {
+    if (!notesSaved) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+        setEditingNotes(false);
+        setTempNotes('');
+        if (autoSaveTimer) {
+          clearTimeout(autoSaveTimer);
+        }
+      }
+    } else {
+      setEditingNotes(false);
+      setTempNotes('');
+    }
+  };
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e) => {
+    // Ctrl+S or Cmd+S to save
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      saveNotes();
+    }
+    
+    // Ctrl+Enter or Cmd+Enter to save and close
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      saveNotes();
+      setEditingNotes(false);
+    }
+    
+    // Escape to cancel (with confirmation if unsaved)
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditingNotes();
+    }
+  };
 
   const generateAnalysis = (child) => {
     const avgScore = Math.round((child.games.kittenMatching.score + child.games.spaceMath.score + child.games.bubblePop.score) / 3);
@@ -398,6 +497,84 @@ const TherapistDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Therapist Notes Section */}
+        <div className="glass-card notes-container">
+          <div className="notes-header">
+            <h3 className="notes-title">📝 Therapist Notes</h3>
+            {!editingNotes ? (
+              <button 
+                className="edit-notes-btn"
+                onClick={() => startEditingNotes(child)}
+              >
+                Edit Notes
+              </button>
+            ) : (
+              <div className="notes-actions">
+                <button 
+                  className="save-notes-btn"
+                  onClick={() => {
+                    saveNotes();
+                    setEditingNotes(false);
+                  }}
+                >
+                  Save & Close
+                </button>
+                <button 
+                  className="cancel-notes-btn"
+                  onClick={cancelEditingNotes}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {!editingNotes ? (
+            <div className="notes-display">
+              <p>{child.therapistNotes || 'No notes added yet. Click "Edit Notes" to add observations and recommendations.'}</p>
+            </div>
+          ) : (
+            <div className="notes-edit">
+              <textarea
+                className="notes-textarea"
+                value={tempNotes}
+                onChange={handleNotesChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Enter your observations, recommendations, and therapy notes here..."
+                rows={8}
+                autoFocus
+                spellCheck="true"
+              />
+              <div className="notes-formatting">
+                <button className="format-btn" onClick={() => {setTempNotes(prev => prev + '• '); setNotesSaved(false);}}>
+                  • Bullet
+                </button>
+                <button className="format-btn" onClick={() => {setTempNotes(prev => prev + '\n----------\n'); setNotesSaved(false);}}>
+                  Divider
+                </button>
+                <button className="format-btn" onClick={() => {setTempNotes(prev => prev + `\n[${new Date().toLocaleDateString()}] `); setNotesSaved(false);}}>
+                  Date
+                </button>
+                <button className="format-btn" onClick={() => {setTempNotes(prev => prev + '\nStrengths:\n• \n\nChallenges:\n• \n\nGoals:\n• \n'); setNotesSaved(false);}}>
+                  Template
+                </button>
+                <div className="save-status">
+                  {notesSaved ? 'All changes saved ✓' : 'Editing...'}
+                </div>
+              </div>
+              <div className="notes-tips">
+                <small>
+                  💡 Include observations about learning patterns, behavioral notes, intervention strategies, and progress recommendations.
+                  <br />
+                  <span className="keyboard-shortcuts">
+                    Shortcuts: <kbd>Ctrl+S</kbd> Save | <kbd>Ctrl+Enter</kbd> Save & Close | <kbd>Esc</kbd> Cancel
+                  </span>
+                </small>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -406,7 +583,24 @@ const TherapistDashboard = () => {
     return (
       <div className="dashboard-container">
         <div className="main-content">
-          <DetailedAnalysis child={selectedChild} onBack={() => setSelectedChild(null)} />
+          <DetailedAnalysis 
+            child={selectedChild} 
+            onBack={() => {
+              // Prompt to save changes if there are unsaved notes
+              if (editingNotes && !notesSaved) {
+                if (window.confirm('You have unsaved changes. Would you like to save them before returning?')) {
+                  saveNotes();
+                }
+              }
+              // Reset editing state when going back
+              setEditingNotes(false);
+              setTempNotes('');
+              if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+              }
+              setSelectedChild(null);
+            }} 
+          />
         </div>
       </div>
     );

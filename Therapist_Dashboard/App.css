@@ -500,6 +500,227 @@
   margin: 0 auto;
 }
 
+/* Therapist Notes Section */
+.notes-container {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+}
+
+.notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.notes-title {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-notes-btn,
+.save-notes-btn,
+.cancel-notes-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.edit-notes-btn:hover,
+.save-notes-btn:hover,
+.cancel-notes-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.save-notes-btn {
+  background: rgba(52, 211, 153, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.save-notes-btn:hover {
+  background: rgba(52, 211, 153, 0.3);
+}
+
+.cancel-notes-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  margin-left: 0.5rem;
+}
+
+.cancel-notes-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.notes-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.notes-display {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-wrap;
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+  border-left: 3px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.notes-display::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notes-display::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.notes-display::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.notes-display::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.notes-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notes-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  color: white;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) inset;
+}
+
+.notes-textarea:focus {
+  outline: none;
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) inset;
+}
+
+.notes-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.notes-formatting {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.format-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.format-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.format-btn:active {
+  transform: translateY(0);
+}
+
+.notes-tips {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8125rem;
+  padding: 0 0.5rem;
+}
+
+/* Save Status Indicator */
+.save-status {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.4rem 0.75rem;
+  background: rgba(52, 211, 153, 0.1);
+  border-radius: 6px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.save-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(52, 211, 153, 0.9);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: fadeInOut 2s ease forwards;
+  z-index: 9999;
+  font-weight: 500;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(20px); }
+  20% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Keyboard Shortcuts */
+.keyboard-shortcuts {
+  display: block;
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.keyboard-shortcuts kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  font-family: monospace;
+  font-size: 0.75rem;
+  padding: 2px 5px;
+  margin: 0 2px;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .stat-card {

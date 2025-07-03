@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
   userType: {
     type: String,
     required: true,
-    enum: ['therapist', 'child']
+    enum: ['therapist', 'child', 'superadmin']
   },
   // Therapist specific fields
   fullName: {
@@ -152,6 +152,14 @@ const authenticateToken = (req, res, next) => {
     req.user = user;
     next();
   });
+};
+
+// Middleware to verify SuperAdmin access
+const authenticateSuperAdmin = (req, res, next) => {
+  if (req.user.userType !== 'superadmin' && req.user.role !== 'superadmin') {
+    return res.status(403).json({ message: 'SuperAdmin access required' });
+  }
+  next();
 };
 
 // Routes
@@ -395,6 +403,75 @@ app.post('/api/login', [
   }
 });
 
+// SuperAdmin Login
+app.post('/api/login/superadmin', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').exists()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Invalid input data',
+        errors: errors.array() 
+      });
+    }
+
+    const { email, password } = req.body;
+    
+    // Verify this is a superadmin email (simple check)
+    if (!email.includes('@admin')) {
+      return res.status(401).json({ 
+        message: 'This is not a superadmin account' 
+      });
+    }
+
+    // Find superadmin user by email
+    const user = await User.findOne({ email, userType: 'superadmin' });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        message: 'Access denied. Invalid superadmin credentials.' 
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        message: 'Access denied. Invalid superadmin credentials.' 
+      });
+    }
+
+    // Update last login time
+    await User.findByIdAndUpdate(user._id, { 
+      lastLoginAt: new Date() 
+    });
+
+    // Generate JWT token with superadmin role
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, userType: 'superadmin' },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      message: 'SuperAdmin login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.fullName || 'SuperAdmin',
+        userType: 'superadmin'
+      }
+    });
+
+  } catch (error) {
+    console.error('SuperAdmin login error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Get User Profile (Protected Route)
 app.get('/api/profile', authenticateToken, async (req, res) => {
   try {
@@ -435,6 +512,8 @@ app.post('/api/verify-token', authenticateToken, async (req, res) => {
       userData.childName = user.childName;
       userData.age = user.age;
       userData.parentEmail = user.parentEmail;
+    } else if (user.userType === 'superadmin') {
+      userData.name = user.fullName || 'SuperAdmin';
     }
 
     res.json({
@@ -443,6 +522,202 @@ app.post('/api/verify-token', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Token verification error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// === SUPERADMIN ENDPOINTS ===
+
+// Get all users (SuperAdmin only)
+app.get('/api/superadmin/users', authenticateToken, authenticateSuperAdmin, async (req, res) => {
+  try {
+    // Exclude superadmin users from the results
+    const users = await User.find({ userType: { $ne: 'superadmin' } })
+      .select('-password')
+      .sort({ createdAt: -1 });
+    
+    const userData = users.map(user => ({
+      _id: user._id,
+      email: user.email,
+      userType: user.userType,
+      name: user.userType === 'therapist' ? user.fullName : user.childName,
+      age: user.userType === 'child' ? user.age : undefined,
+      parentEmail: user.userType === 'child' ? user.parentEmail : undefined,
+      specialization: user.userType === 'therapist' ? user.licenseNumber : undefined,
+      phoneNumber: user.userType === 'therapist' ? user.phoneNumber : undefined,
+      isVerified: user.userType === 'therapist' ? true : undefined, // Assuming all are verified for now
+      createdAt: user.createdAt,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt
+    }));
+
+    res.json({
+      success: true,
+      users: userData
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Create therapist account (SuperAdmin only)
+app.post('/api/superadmin/create-therapist', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('name').trim().isLength({ min: 2 }),
+  body('specialization').trim().isLength({ min: 1 })
+], authenticateToken, authenticateSuperAdmin, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password, name, specialization } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new therapist user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      userType: 'therapist',
+      fullName: name,
+      phoneNumber: 'N/A', // Default for admin-created accounts
+      licenseNumber: specialization
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      message: 'Therapist account created successfully',
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        name: newUser.fullName,
+        specialization: newUser.licenseNumber
+      }
+    });
+  } catch (error) {
+    console.error('Error creating therapist:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Create child account (SuperAdmin only)
+app.post('/api/superadmin/create-child', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('name').trim().isLength({ min: 2 }),
+  body('age').isInt({ min: 3, max: 18 }),
+  body('parentEmail').isEmail().normalizeEmail()
+], authenticateToken, authenticateSuperAdmin, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password, name, age, parentEmail } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new child user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      userType: 'child',
+      childName: name,
+      age,
+      parentEmail
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      message: 'Child account created successfully',
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        name: newUser.childName,
+        age: newUser.age,
+        parentEmail: newUser.parentEmail
+      }
+    });
+  } catch (error) {
+    console.error('Error creating child:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Verify therapist (SuperAdmin only)
+app.put('/api/superadmin/verify-therapist/:therapistId', authenticateToken, authenticateSuperAdmin, async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    const therapist = await User.findById(therapistId);
+    if (!therapist || therapist.userType !== 'therapist') {
+      return res.status(404).json({ message: 'Therapist not found' });
+    }
+
+    // Update verification status (for now just acknowledge the request)
+    res.json({
+      message: 'Therapist verified successfully',
+      user: {
+        id: therapist._id,
+        name: therapist.fullName,
+        isVerified: true
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying therapist:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete user account (SuperAdmin only)
+app.delete('/api/superadmin/delete-user/:userId', authenticateToken, authenticateSuperAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    // Also delete their game scores
+    await GameScore.deleteMany({ userId });
+
+    res.json({
+      message: 'User account deleted successfully',
+      deletedUser: {
+        id: user._id,
+        email: user.email,
+        name: user.userType === 'therapist' ? user.fullName : user.childName
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -882,7 +1157,49 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'API endpoint not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Joyverse API server running on port ${PORT}`);
-  console.log(`📝 API Documentation: http://localhost:${PORT}/api/health`);
-});
+// Seed SuperAdmin user
+const seedSuperAdmin = async () => {
+  try {
+    const superAdminEmail = 'admin@joyverse.com';
+    const existingSuperAdmin = await User.findOne({ email: superAdminEmail });
+    
+    if (!existingSuperAdmin) {
+      const hashedPassword = await bcrypt.hash('superadmin123', 12);
+      
+      const superAdmin = new User({
+        email: superAdminEmail,
+        password: hashedPassword,
+        userType: 'superadmin',
+        fullName: 'Super Administrator',
+        phoneNumber: 'N/A',
+        licenseNumber: 'SUPERADMIN'
+      });
+      
+      await superAdmin.save();
+      console.log('✅ SuperAdmin account created:');
+      console.log('   Email: admin@joyverse.com');
+      console.log('   Password: superadmin123');
+    } else {
+      console.log('✅ SuperAdmin account already exists');
+    }
+  } catch (error) {
+    console.error('❌ Error creating SuperAdmin account:', error);
+  }
+};
+
+// Initialize server
+const startServer = async () => {
+  try {
+    await seedSuperAdmin();
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Joyverse API server running on port ${PORT}`);
+      console.log(`📝 API Documentation: http://localhost:${PORT}/api/health`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

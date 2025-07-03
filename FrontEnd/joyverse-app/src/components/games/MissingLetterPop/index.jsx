@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './game.css';
 import gameScoreService from '../../../services/gameScoreAPI';
 import emotionDetectionService from '../../../services/emotionAPI';
-import { getThemeForEmotion } from '../../../utils/emotionThemes';
 
 const MissingLetterPop = ({ onClose, user }) => {
   // Game state
@@ -15,17 +14,22 @@ const MissingLetterPop = ({ onClose, user }) => {
   const [gameActive, setGameActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [bubbles, setBubbles] = useState([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);  const [showGameOver, setShowGameOver] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);  
+  const [showGameOver, setShowGameOver] = useState(false);
   const [completedWord, setCompletedWord] = useState('');
   const [feedback, setFeedback] = useState([]);
   const [gameStartTime, setGameStartTime] = useState(null);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
-
-  // Emotion detection states
-  const [currentEmotion, setCurrentEmotion] = useState('happiness');
-  const [emotionTheme, setEmotionTheme] = useState(getThemeForEmotion('happiness'));
-  const [isEmotionDetectionActive, setIsEmotionDetectionActive] = useState(false);
+  
+  // Emotion detection state
+  const [cameraActive, setCameraActive] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState(null);
+  const [emotionConfidence, setEmotionConfidence] = useState(0);
+  const [showEmotionDisplay, setShowEmotionDisplay] = useState(true);
+  const [emotionCapturing, setEmotionCapturing] = useState(false);
+  const [showCameraPreview, setShowCameraPreview] = useState(false);
+  const emotionCaptureRef = useRef(null);
 
   // Refs
   const gameTimerRef = useRef(null);
@@ -43,6 +47,81 @@ const MissingLetterPop = ({ onClose, user }) => {
 
   const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 
                   'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y'];
+                  
+  // Map emotions to themes
+  const emotionThemeMap = {
+    "happy": 3, // Yellow/orange happy theme
+    "sad": 1,   // Purple/blue sad theme
+    "angry": 1, // Purple/blue to calm anger
+    "fear": 4,  // Purple theme for comfort
+    "neutral": 2, // Green neutral theme
+    "surprise": 3, // Yellow/orange surprise theme
+    "disgust": 2,  // Green theme for disgust
+    // Default to theme 1 if emotion not found
+    "default": 1
+  };
+  
+  // Function to handle emotion detection results
+  const handleEmotionDetected = useCallback((emotionData) => {
+    const { emotion, confidence } = emotionData;
+    
+    // Set the current emotion and confidence
+    setCurrentEmotion(emotion);
+    setEmotionConfidence(confidence);
+    
+    // Update the game theme based on detected emotion
+    const newTheme = emotionThemeMap[emotion] || emotionThemeMap.default;
+    setCurrentTheme(newTheme);
+    
+    console.log(`🎭 Emotion detected: ${emotion} (${Math.round(confidence * 100)}%) - Theme changed to ${newTheme}`);
+  }, [emotionThemeMap]);
+  
+  // Start emotion detection on game start
+  const startEmotionDetection = useCallback(async () => {
+    if (cameraActive) return;
+    
+    try {
+      const result = await emotionDetectionService.startEmotionDetection(
+        handleEmotionDetected,
+        showCameraPreview // show preview if enabled
+      );
+      
+      setCameraActive(result);
+      setEmotionCapturing(result);
+      
+      // Set up periodic capture every 5 seconds
+      if (result) {
+        // Clear any existing interval
+        if (emotionCaptureRef.current) {
+          clearInterval(emotionCaptureRef.current);
+        }
+        
+        // Set new interval for every 5 seconds
+        emotionCaptureRef.current = setInterval(() => {
+          if (!emotionDetectionService.isCapturing) return;
+          emotionDetectionService.manualCapture();
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Failed to start emotion detection:', error);
+      setCameraActive(false);
+      setEmotionCapturing(false);
+    }
+  }, [cameraActive, handleEmotionDetected, showCameraPreview]);
+  
+  // Stop emotion detection
+  const stopEmotionDetection = useCallback(() => {
+    if (emotionCaptureRef.current) {
+      clearInterval(emotionCaptureRef.current);
+      emotionCaptureRef.current = null;
+    }
+    
+    emotionDetectionService.stopEmotionDetection();
+    setCameraActive(false);
+    setEmotionCapturing(false);
+    setCurrentEmotion(null);
+    setEmotionConfidence(0);
+  }, []);
 
   // Sound effect function
   const playPopSound = useCallback((isCorrect) => {
@@ -238,7 +317,6 @@ const MissingLetterPop = ({ onClose, user }) => {
       setTotalQuestions(prev => prev + 1);
       setMistakes(prev => {
         const newMistakes = prev + 1;
-        // Removed theme change on mistakes - themes now change based on emotions only
         return newMistakes;
       });
     }
@@ -262,6 +340,15 @@ const MissingLetterPop = ({ onClose, user }) => {
     };
   }, [gameActive, timeLeft]);
 
+  // Start emotion detection when game becomes active
+  useEffect(() => {
+    if (gameActive) {
+      startEmotionDetection();
+    } else {
+      stopEmotionDetection();
+    }
+  }, [gameActive, startEmotionDetection, stopEmotionDetection]);
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -277,70 +364,33 @@ const MissingLetterPop = ({ onClose, user }) => {
   const startGame = () => {
     if (gameActive) {
       setGameActive(false);
-      // Stop emotion detection when game stops
-      emotionDetectionService.stopEmotionDetection();
-      setIsEmotionDetectionActive(false);
+      stopEmotionDetection();
     } else {
       setGameActive(true);
       setShowGameOver(false);
       setScore(0);
       setMistakes(0);
       setTimeLeft(60);
-      // Removed setCurrentTheme(1) - theme is now controlled by emotions
+      setCurrentTheme(1);
       setGameStartTime(Date.now());
       setCorrectAnswers(0);
       setTotalQuestions(0);
       startRound();
-      
-      // Initialize emotion detection
-      initializeEmotionDetection();
+      startEmotionDetection();
     }
   };
 
-  // Initialize emotion detection
-  const initializeEmotionDetection = async () => {
-    try {
-      const success = await emotionDetectionService.startEmotionDetection(handleEmotionDetected, true);
-      if (success) {
-        setIsEmotionDetectionActive(true);
-        emotionDetectionService.enableFastMode();
-        console.log('🎯 Emotion detection initialized for Missing Letter Pop Game');
-      }
-    } catch (error) {
-      console.error('❌ Failed to initialize emotion detection:', error);
-    }
-  };
-
-  // Handle emotion detection results
-  const handleEmotionDetected = (emotionData) => {
-    const { emotion } = emotionData;
-    setCurrentEmotion(emotion);
-    const newTheme = getThemeForEmotion(emotion);
-    setEmotionTheme(newTheme);
-  };
-
-  // Test API connection
-  const testAPIConnection = async () => {
-    try {
-      const result = await emotionDetectionService.testAPIConnection();
-      if (result.success) {
-        alert('✅ API is working! ' + result.message);
-      } else {
-        alert('❌ API test failed: ' + result.message);
-      }
-    } catch (error) {
-      alert('❌ Error testing API: ' + error.message);
-    }
-  };
-
-  // Cleanup effect for emotion detection
+  // Cleanup effect
   useEffect(() => {
     return () => {
-      if (isEmotionDetectionActive) {
-        emotionDetectionService.stopEmotionDetection();
+      console.log('🧹 Cleaning up Missing Letter Pop Game');
+      stopEmotionDetection();
+      if (emotionCaptureRef.current) {
+        clearInterval(emotionCaptureRef.current);
+        emotionCaptureRef.current = null;
       }
     };
-  }, [isEmotionDetectionActive]);
+  }, [stopEmotionDetection]);
 
   // Save game score to database
   const saveGameScore = async () => {
@@ -354,7 +404,9 @@ const MissingLetterPop = ({ onClose, user }) => {
         correctAnswers,
         totalQuestions,
         mistakes,
-        wordsCompleted: correctAnswers
+        wordsCompleted: correctAnswers,
+        emotion: currentEmotion || 'unknown',
+        emotionUsed: cameraActive
       };
       
       const formattedData = gameScoreService.formatGameData('missing-letter-pop', gameData);
@@ -371,11 +423,12 @@ const MissingLetterPop = ({ onClose, user }) => {
     setScore(0);
     setMistakes(0);
     setTimeLeft(60);
-    // Removed setCurrentTheme(1) - theme is now controlled by emotions
     setBubbles([]);
     setCompletedWord('');
     setShowGameOver(false);
     setFeedback([]);
+    stopEmotionDetection();
+    setCurrentTheme(1);
   };
 
   // Create word display with missing letter
@@ -388,31 +441,121 @@ const MissingLetterPop = ({ onClose, user }) => {
       </span>
     ));
   };
+
+  // Start/stop emotion detection on game start/stop
+  useEffect(() => {
+    if (gameActive) {
+      startEmotionDetection();
+    } else {
+      stopEmotionDetection();
+    }
+  }, [gameActive, startEmotionDetection, stopEmotionDetection]);
+
+  // Test face detection
+  const testFaceDetection = useCallback(async () => {
+    if (!emotionDetectionService.stream || !emotionDetectionService.videoElement) {
+      alert('Camera not initialized. Please restart the camera first.');
+      return;
+    }
+
+    try {
+      // Force camera preview to show
+      setShowCameraPreview(true);
+      if (!cameraActive) {
+        await startEmotionDetection();
+      } else {
+        // If camera is already active, just show the preview
+        emotionDetectionService.showPreview = true;
+        emotionDetectionService.addPreviewToDOM();
+      }
+
+      // Force a manual capture
+      const result = await emotionDetectionService.manualCapture();
+      if (result) {
+        alert(`Emotion detected: ${result.emotion} with confidence: ${Math.round(result.confidence * 100)}%`);
+      } else {
+        alert('No emotion detected. Try adjusting the camera position or lighting.');
+      }
+    } catch (error) {
+      console.error('Failed to test face detection:', error);
+      alert('Failed to test face detection. Check console for details.');
+    }
+  }, [cameraActive, startEmotionDetection]);
+
+  // Function to test camera connectivity
+  const testCameraStatus = useCallback(async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera API not supported in this browser');
+        return;
+      }
+      
+      // Check available devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      
+      if (videoDevices.length === 0) {
+        alert('No camera devices found on this device');
+        return;
+      }
+      
+      // Test camera access
+      alert(`Found ${videoDevices.length} camera(s). Requesting access...`);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        }
+      });
+      
+      // Success! We got camera access
+      alert('Camera access granted successfully! Stopping test stream now.');
+      
+      // Clean up test stream
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Now restart the emotion detection
+      setShowCameraPreview(true);
+      await stopEmotionDetection();
+      setTimeout(() => startEmotionDetection(), 500);
+      
+    } catch (error) {
+      let errorMessage = 'Unknown camera error';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found on your device.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Camera is already in use by another application. Please close other apps using the camera.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = 'Camera constraints not satisfied. Your camera may not support the required resolution.';
+      }
+      
+      alert(`Camera error: ${errorMessage}\n\nFull error: ${error.message}`);
+    }
+  }, [stopEmotionDetection, startEmotionDetection]);
+
   return (
     <div 
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
-        background: emotionTheme.colors.background || `linear-gradient(-45deg, ${emotionTheme.colors.primary}40, ${emotionTheme.colors.secondary}40, ${emotionTheme.colors.accent}40)`,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        background: `linear-gradient(-45deg, #ff6b6b40, #4ecdc440, #45b7d140, #96ceb440)`,
         backgroundSize: '400% 400%',
         animation: 'gradientShift 15s ease infinite',
         transition: 'background 0.8s ease-in-out',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 0
+        zIndex: 10000
       }}
     >
-      <div className={`missing-letter-game theme-${currentTheme}`} style={{
-        width: '100%',
-        height: '100%',
-        borderRadius: '0',
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
+      <div className={`missing-letter-game theme-${currentTheme}`}>
       {/* Settings */}
       <div className="settings">
         <label>
@@ -423,6 +566,23 @@ const MissingLetterPop = ({ onClose, user }) => {
           />
           <span>Sound Effects</span>
         </label>
+        {gameActive && (
+          <label style={{ marginTop: '8px', display: 'block' }}>
+            <input
+              type="checkbox"
+              checked={showCameraPreview}
+              onChange={(e) => {
+                setShowCameraPreview(e.target.checked);
+                // If camera is active, restart it with new preview setting
+                if (cameraActive) {
+                  stopEmotionDetection();
+                  setTimeout(() => startEmotionDetection(), 500);
+                }
+              }}
+            />
+            <span>Show Camera Preview</span>
+          </label>
+        )}
       </div>
 
       {/* Game Container */}
@@ -522,28 +682,30 @@ const MissingLetterPop = ({ onClose, user }) => {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Controls */}
-      <div className="controls">
-        <button
-          onClick={startGame}
-          className="btn btn-start"
-        >
-          {gameActive ? 'Pause Game' : 'Start Game'}
-        </button>
-        <button
-          onClick={resetGame}
-          className="btn btn-reset"
-        >
-          Reset Game
-        </button>
-        <button
-          onClick={testAPIConnection}
-          className="btn btn-test"
-        >
-          🔌 Test API
-        </button>
+        
+        {/* Controls - Moved inside game container */}
+        <div className="controls">
+          <button
+            onClick={startGame}
+            className="btn btn-start"
+            style={{ 
+              position: 'relative', 
+              zIndex: 3000000
+            }}
+          >
+            {gameActive ? 'Pause Game' : 'Start Game'}
+          </button>
+          <button
+            onClick={resetGame}
+            className="btn btn-reset"
+            style={{ 
+              position: 'relative', 
+              zIndex: 3000000
+            }}
+          >
+            Reset Game
+          </button>
+        </div>
       </div>
 
       {/* Game Over Modal */}
@@ -580,8 +742,141 @@ const MissingLetterPop = ({ onClose, user }) => {
         boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
         border: '2px solid rgba(255, 255, 255, 0.8)'
       }}>
-        Theme is {emotionTheme.name}
+        Theme {currentTheme}
       </div>
+      
+      {/* Emotion Status Display */}
+      {gameActive && showEmotionDisplay && (
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          background: 'rgba(255, 255, 255, 0.9)',
+          color: '#333',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          fontSize: '14px',
+          fontWeight: '600',
+          zIndex: 1001,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          border: '2px solid rgba(255, 255, 255, 0.8)',
+          transition: 'all 0.3s ease'
+        }}>
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: cameraActive ? '#22c55e' : '#ef4444',
+            boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+            animation: cameraActive ? 'pulse 2s infinite' : 'none'
+          }}></div>
+          {currentEmotion ? (
+            <span>
+              {currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)} 
+              {emotionConfidence > 0 && ` (${Math.round(emotionConfidence * 100)}%)`}
+            </span>
+          ) : (
+            <span>{cameraActive ? 'Detecting...' : 'Camera Off'}</span>
+          )}
+          <button 
+            onClick={() => {
+              stopEmotionDetection();
+              setTimeout(() => startEmotionDetection(), 500);
+            }}
+            style={{
+              marginLeft: '8px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            Restart Camera
+          </button>
+        </div>
+      )}
+
+      {/* Debug Panel for Face Detection */}
+      {gameActive && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '10px 15px',
+          borderRadius: '10px',
+          fontSize: '14px',
+          zIndex: 999999,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid #555', paddingBottom: '5px' }}>
+            Face Detection Debug
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button 
+              onClick={() => {
+                setShowCameraPreview(true);
+                stopEmotionDetection();
+                setTimeout(() => startEmotionDetection(), 500);
+              }}
+              style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                padding: '8px 12px',
+                cursor: 'pointer'
+              }}
+            >
+              Restart Camera with Preview
+            </button>
+            
+            <button 
+              onClick={testFaceDetection}
+              style={{
+                background: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                padding: '8px 12px',
+                cursor: 'pointer'
+              }}
+            >
+              Test Face Detection
+            </button>
+            
+            <button 
+              onClick={testCameraStatus}
+              style={{
+                background: '#f59e0b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                padding: '8px 12px',
+                cursor: 'pointer'
+              }}
+            >
+              Test Camera Access
+            </button>
+            
+            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '5px' }}>
+              <p>Camera Status: {cameraActive ? 'Active' : 'Inactive'}</p>
+              {currentEmotion && <p>Last Emotion: {currentEmotion} ({Math.round(emotionConfidence * 100)}%)</p>}
+              <p>Preview: {showCameraPreview ? 'Visible' : 'Hidden'}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CSS for gradient animation */}
       <style jsx>{`
@@ -589,6 +884,12 @@ const MissingLetterPop = ({ onClose, user }) => {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
         }
       `}</style>
       </div>

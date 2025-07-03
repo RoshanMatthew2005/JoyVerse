@@ -11,7 +11,8 @@ const AUTH_ACTIONS = {
   LOGIN_FAILURE: 'LOGIN_FAILURE',
   LOGOUT: 'LOGOUT',
   SET_LOADING: 'SET_LOADING',
-  SET_USER: 'SET_USER'
+  SET_USER: 'SET_USER',
+  SUPERADMIN_LOGIN: 'SUPERADMIN_LOGIN'
 };
 
 // Initial State
@@ -103,11 +104,28 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
       
-      const response = await authAPI.login(email, password);
-      
-      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.user });
-      
-      return response;
+      // Check if this is a superadmin login attempt
+      if (email.includes('@admin')) {
+        const response = await authAPI.loginSuperAdmin(email, password);
+        
+        // Store token and user data for superadmin
+        if (response.token) {
+          localStorage.setItem('joyverse_token', response.token);
+          localStorage.setItem('joyverse_user', JSON.stringify(response.user));
+        }
+        
+        // The user object should already have userType: 'superadmin' from the backend
+        dispatch({ 
+          type: AUTH_ACTIONS.LOGIN_SUCCESS, 
+          payload: response.user
+        });
+        return response;
+      } else {
+        // Regular user login
+        const response = await authAPI.login(email, password);
+        dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.user });
+        return response;
+      }
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: error.message });
       throw error;
