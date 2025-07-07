@@ -81,81 +81,191 @@
   }
 }
 
-/* Planet Background Themes */
-.mercury-bg {
-  background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #d97706 100%);
-}
+/* Mercury Themes */
+.mercury-bg { background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%); }
+.mercury-happy-bg { background: linear-gradient(135deg, #fef3c7 0%, #fde047 50%, #facc15 100%); }
+.mercury-sad-bg { background: linear-gradient(135deg, #a16207 0%, #ca8a04 50%, #d97706 100%); }
+.mercury-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #f59e0b 50%, #ea580c 100%); }
+.mercury-fear-bg { background: linear-gradient(135deg, #78716c 0%, #a8a29e 50%, #d6d3d1 100%); }
+.mercury-surprise-bg { background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #f59e0b 100%); }
+.mercury-disgust-bg { background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%); }
 
-.venus-bg {
-  background: linear-gradient(135deg, #ea580c 0%, #eab308 50%, #dc2626 100%);
-}
+/* Venus Themes */
+.venus-bg { background: linear-gradient(135deg, #f87171 0%, #fb7185 50%, #ec4899 100%); }
+.venus-happy-bg { background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 50%, #f9a8d4 100%); }
+.venus-sad-bg { background: linear-gradient(135deg, #dc2626 0%, #e11d48 50%, #be123c 100%); }
+.venus-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); }
+.venus-fear-bg { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%); }
+.venus-surprise-bg { background: linear-gradient(135deg, #fecaca 0%, #fda4af 50%, #fb7185 100%); }
+.venus-disgust-bg { background: linear-gradient(135deg, #86198f 0%, #a21caf 50%, #c026d3 100%); }
 
-.earth-bg {
-  background: linear-gradient(135deg, #2563eb 0%, #059669 50%, #1e40af 100%);
-}
+/* Earth Themes */
+.earth-bg { background: linear-gradient(135deg, #2563eb 0%, #059669 50%, #1e40af 100%); }
+.earth-happy-bg { background: linear-gradient(135deg, #a7f3d0 0%, #34d399 50%, #10b981 100%); }
+.earth-sad-bg { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%); }
+.earth-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #7f1d1d 100%); }
+.earth-fear-bg { background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #030712 100%); }
+.earth-surprise-bg { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 50%, #3b82f6 100%); }
+.earth-disgust-bg { background: linear-gradient(135deg, #581c87 0%, #6b21a8 50%, #7c3aed 100%); }
 
-.mars-bg {
-  background: linear-gradient(135deg, #991b1b 0%, #c2410c 50%, #dc2626 100%);
-}
+/* Mars Themes */
+.mars-bg { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #7f1d1d 100%); }
+.mars-happy-bg { background: linear-gradient(135deg, #fed7aa 0%, #fb923c 50%, #ea580c 100%); }
+.mars-sad-bg { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%); }
+.mars-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); }
+.mars-fear-bg { background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #991b1b 100%); }
+.mars-surprise-bg { background: linear-gradient(135deg, #fecaca 0%, #fca5a5 50%, #f87171 100%); }
+.mars-disgust-bg { background: linear-gradient(135deg, #86198f 0%, #a21caf 50%, #c026d3 100%); }
 
-.jupiter-bg {
-  background: linear-gradient(135deg, #a16207 0%, #ea580c 50%, #b91c1c 100%);
-}
+/* Jupiter Themes */
+.jupiter-bg { background: linear-gradient(135deg, #a16207 0%, #ca8a04 50%, #eab308 100%); }
+.jupiter-happy-bg { background: linear-gradient(135deg, #fef3c7 0%, #fde047 50%, #facc15 100%); }
+.jupiter-sad-bg { background: linear-gradient(135deg, #713f12 0%, #92400e 50%, #b45309 100%); }
+.jupiter-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #f97316 100%); }
+.jupiter-fear-bg { background: linear-gradient(135deg, #451a03 0%, #713f12 50%, #92400e 100%); }
+.jupiter-surprise-bg { background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #f59e0b 100%); }
+.jupiter-disgust-bg { background: linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #8b5cf6 100%); }
 
-.saturn-bg {
-  background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #a16207 100%);
-}
+/* Saturn Themes */
+.saturn-bg { background: linear-gradient(135deg, #7c2d12 0%, #ea580c 50%, #fbbf24 100%); }
+.saturn-happy-bg { background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fdba74 100%); }
+.saturn-sad-bg { background: linear-gradient(135deg, #451a03 0%, #7c2d12 50%, #9a3412 100%); }
+.saturn-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #f97316 100%); }
+.saturn-fear-bg { background: linear-gradient(135deg, #292524 0%, #44403c 50%, #57534e 100%); }
+.saturn-surprise-bg { background: linear-gradient(135deg, #fed7aa 0%, #fb923c 50%, #ea580c 100%); }
+.saturn-disgust-bg { background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%); }
 
-.uranus-bg {
-  background: linear-gradient(135deg, #0891b2 0%, #3b82f6 50%, #0d9488 100%);
-}
+/* Uranus Themes */
+.uranus-bg { background: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%); }
+.uranus-happy-bg { background: linear-gradient(135deg, #cffafe 0%, #67e8f9 50%, #22d3ee 100%); }
+.uranus-sad-bg { background: linear-gradient(135deg, #164e63 0%, #155e75 50%, #0e7490 100%); }
+.uranus-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #0891b2 50%, #155e75 100%); }
+.uranus-fear-bg { background: linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%); }
+.uranus-surprise-bg { background: linear-gradient(135deg, #a5f3fc 0%, #06b6d4 50%, #0891b2 100%); }
+.uranus-disgust-bg { background: linear-gradient(135deg, #581c87 0%, #0891b2 50%, #155e75 100%); }
 
-.neptune-bg {
-  background: linear-gradient(135deg, #1e40af 0%, #4338ca 50%, #1e3a8a 100%);
-}
+/* Neptune Themes */
+.neptune-bg { background: linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #4338ca 100%); }
+.neptune-happy-bg { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 50%, #60a5fa 100%); }
+.neptune-sad-bg { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%); }
+.neptune-angry-bg { background: linear-gradient(135deg, #dc2626 0%, #3730a3 50%, #4338ca 100%); }
+.neptune-fear-bg { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%); }
+.neptune-surprise-bg { background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%); }
+.neptune-disgust-bg { background: linear-gradient(135deg, #581c87 0%, #6b21a8 50%, #7c3aed 100%); }
 
-/* Planet Accent Colors */
-.mercury-accent {
-  background: linear-gradient(135deg, #eab308 0%, #f97316 100%);
-}
+/* Emotion-based Accent Colors */
+.mercury-happy-accent { background: linear-gradient(135deg, #fde047 0%, #facc15 100%); }
+.mercury-sad-accent { background: linear-gradient(135deg, #ca8a04 0%, #d97706 100%); }
+.mercury-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%); }
+.mercury-fear-accent { background: linear-gradient(135deg, #78716c 0%, #a8a29e 100%); }
+.mercury-surprise-accent { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+.mercury-disgust-accent { background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%); }
 
-.venus-accent {
-  background: linear-gradient(135deg, #f87171 0%, #fb7185 100%);
-}
+.venus-happy-accent { background: linear-gradient(135deg, #fbb6ce 0%, #f9a8d4 100%); }
+.venus-sad-accent { background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); }
+.venus-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
+.venus-fear-accent { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); }
+.venus-surprise-accent { background: linear-gradient(135deg, #fda4af 0%, #fb7185 100%); }
+.venus-disgust-accent { background: linear-gradient(135deg, #86198f 0%, #c026d3 100%); }
 
-.earth-accent {
-  background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
-}
+.earth-happy-accent { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); }
+.earth-sad-accent { background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); }
+.earth-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); }
+.earth-fear-accent { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); }
+.earth-surprise-accent { background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%); }
+.earth-disgust-accent { background: linear-gradient(135deg, #581c87 0%, #7c3aed 100%); }
 
-.mars-accent {
-  background: linear-gradient(135deg, #fb923c 0%, #f87171 100%);
-}
+.mars-happy-accent { background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%); }
+.mars-sad-accent { background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%); }
+.mars-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
+.mars-fear-accent { background: linear-gradient(135deg, #450a0a 0%, #991b1b 100%); }
+.mars-surprise-accent { background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%); }
+.mars-disgust-accent { background: linear-gradient(135deg, #86198f 0%, #c026d3 100%); }
 
-.jupiter-accent {
-  background: linear-gradient(135deg, #fbbf24 0%, #fb923c 100%);
-}
+.jupiter-happy-accent { background: linear-gradient(135deg, #fde047 0%, #facc15 100%); }
+.jupiter-sad-accent { background: linear-gradient(135deg, #713f12 0%, #b45309 100%); }
+.jupiter-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #f97316 100%); }
+.jupiter-fear-accent { background: linear-gradient(135deg, #451a03 0%, #92400e 100%); }
+.jupiter-surprise-accent { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+.jupiter-disgust-accent { background: linear-gradient(135deg, #6b21a8 0%, #8b5cf6 100%); }
 
-.saturn-accent {
-  background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
-}
+.saturn-happy-accent { background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); }
+.saturn-sad-accent { background: linear-gradient(135deg, #451a03 0%, #9a3412 100%); }
+.saturn-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #f97316 100%); }
+.saturn-fear-accent { background: linear-gradient(135deg, #292524 0%, #57534e 100%); }
+.saturn-surprise-accent { background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%); }
+.saturn-disgust-accent { background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); }
 
-.uranus-accent {
-  background: linear-gradient(135deg, #22d3ee 0%, #60a5fa 100%);
-}
+.uranus-happy-accent { background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%); }
+.uranus-sad-accent { background: linear-gradient(135deg, #164e63 0%, #0e7490 100%); }
+.uranus-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #155e75 100%); }
+.uranus-fear-accent { background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%); }
+.uranus-surprise-accent { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
+.uranus-disgust-accent { background: linear-gradient(135deg, #581c87 0%, #155e75 100%); }
 
-.neptune-accent {
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
-}
+.neptune-happy-accent { background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%); }
+.neptune-sad-accent { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); }
+.neptune-angry-accent { background: linear-gradient(135deg, #dc2626 0%, #4338ca 100%); }
+.neptune-fear-accent { background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%); }
+.neptune-surprise-accent { background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%); }
+.neptune-disgust-accent { background: linear-gradient(135deg, #581c87 0%, #7c3aed 100%); }
 
-/* Planet Text Colors */
-.mercury-text { color: #f3f4f6; }
-.venus-text { color: #fed7aa; }
-.earth-text { color: #dbeafe; }
-.mars-text { color: #fecaca; }
-.jupiter-text { color: #fef3c7; }
-.saturn-text { color: #fef3c7; }
-.uranus-text { color: #cffafe; }
-.neptune-text { color: #dbeafe; }
+/* Emotion-based Text Colors */
+.mercury-happy-text { color: #451a03; }
+.mercury-sad-text { color: #f3f4f6; }
+.mercury-angry-text { color: #fef3c7; }
+.mercury-fear-text { color: #f3f4f6; }
+.mercury-surprise-text { color: #451a03; }
+.mercury-disgust-text { color: #f3f4f6; }
+
+.venus-happy-text { color: #450a0a; }
+.venus-sad-text { color: #fed7aa; }
+.venus-angry-text { color: #fef3c7; }
+.venus-fear-text { color: #fed7aa; }
+.venus-surprise-text { color: #450a0a; }
+.venus-disgust-text { color: #fef3c7; }
+
+.earth-happy-text { color: #064e3b; }
+.earth-sad-text { color: #dbeafe; }
+.earth-angry-text { color: #fef3c7; }
+.earth-fear-text { color: #f3f4f6; }
+.earth-surprise-text { color: #1e3a8a; }
+.earth-disgust-text { color: #fef3c7; }
+
+.mars-happy-text { color: #451a03; }
+.mars-sad-text { color: #fecaca; }
+.mars-angry-text { color: #fef3c7; }
+.mars-fear-text { color: #fecaca; }
+.mars-surprise-text { color: #450a0a; }
+.mars-disgust-text { color: #fef3c7; }
+
+.jupiter-happy-text { color: #451a03; }
+.jupiter-sad-text { color: #fef3c7; }
+.jupiter-angry-text { color: #fef3c7; }
+.jupiter-fear-text { color: #fef3c7; }
+.jupiter-surprise-text { color: #451a03; }
+.jupiter-disgust-text { color: #fef3c7; }
+
+.saturn-happy-text { color: #451a03; }
+.saturn-sad-text { color: #fef3c7; }
+.saturn-angry-text { color: #fef3c7; }
+.saturn-fear-text { color: #f3f4f6; }
+.saturn-surprise-text { color: #451a03; }
+.saturn-disgust-text { color: #fef3c7; }
+
+.uranus-happy-text { color: #164e63; }
+.uranus-sad-text { color: #cffafe; }
+.uranus-angry-text { color: #cffafe; }
+.uranus-fear-text { color: #cffafe; }
+.uranus-surprise-text { color: #164e63; }
+.uranus-disgust-text { color: #cffafe; }
+
+.neptune-happy-text { color: #1e3a8a; }
+.neptune-sad-text { color: #dbeafe; }
+.neptune-angry-text { color: #dbeafe; }
+.neptune-fear-text { color: #dbeafe; }
+.neptune-surprise-text { color: #1e3a8a; }
+.neptune-disgust-text { color: #dbeafe; }
 
 /* Game Container */
 .game-container {

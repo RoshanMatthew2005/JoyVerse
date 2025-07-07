@@ -47,7 +47,7 @@ try:
     client.server_info()
     db = client["joyverse"]  # Use the same database as the main backend
     collection = db["emotion_predictions"]  # Use (or create) 'emotion_predictions' collection
-    logger.info("✅ Successfully connected to MongoDB Atlas.")
+    logger.info("✅ Successfully connected to MongoDB.")
 except Exception as e:
     logger.error(f"❌ Could not connect to MongoDB: {e}")
     db = None

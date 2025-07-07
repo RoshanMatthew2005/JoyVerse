@@ -75,6 +75,15 @@ const ChildDashboard = () => {
       icon: Music,
       emoji: '🎵',
       onClick: () => navigate('/games/music-fun')
+    },
+    {
+      id: 6,
+      title: '🟡 PacMan Quest',
+      description: 'Eat colorful dots and avoid the walls!',
+      color: '#feca57',
+      icon: Gamepad2,
+      emoji: '🟡',
+      onClick: () => navigate('/games/pacman')
     }
   ];
 

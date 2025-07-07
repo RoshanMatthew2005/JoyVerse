@@ -14,7 +14,8 @@ import {
   MissingLetterPopPage,
   ArtStudioPage,
   SpaceMathGamePage,
-  MusicFunPage
+  MusicFunPage,
+  PacManGamePage
 } from './pages';
 
 // Protected Route Component
@@ -150,6 +151,14 @@ const JoyverseAppContent = () => {
           element={
             <ProtectedRoute requiredUserType="child">
               <MusicFunPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/games/pacman" 
+          element={
+            <ProtectedRoute requiredUserType="child">
+              <PacManGamePage />
             </ProtectedRoute>
           } 
         />
