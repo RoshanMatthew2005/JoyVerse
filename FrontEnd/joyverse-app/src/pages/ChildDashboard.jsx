@@ -52,7 +52,7 @@ const ChildDashboard = () => {
     {
       id: 3,
       title: '🚀 Space Math Quest',
-      description: 'Explore planets and solve math problems in space!',
+      description: 'Explore planets while solving math problems!',
       color: '#a55eea',
       icon: Rocket,
       emoji: '🚀',
