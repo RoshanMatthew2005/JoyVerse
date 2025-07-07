@@ -30,7 +30,7 @@ const GameStats = ({ user }) => {
 
   const getGameDisplayName = (gameType) => {
     switch (gameType) {
-      case 'kitten-match': return '🐱 Kitten Match';
+      case 'pacman': return '� PacMan Quest';
       case 'missing-letter-pop': return '🔤 Missing Letter Pop';
       case 'art-studio': return '🎨 Art Studio';
       default: return gameType;
@@ -39,7 +39,7 @@ const GameStats = ({ user }) => {
 
   const getGameIcon = (gameType) => {
     switch (gameType) {
-      case 'kitten-match': return '🐱';
+      case 'pacman': return '�';
       case 'missing-letter-pop': return '🔤';
       case 'art-studio': return '🎨';
       default: return '🎮';

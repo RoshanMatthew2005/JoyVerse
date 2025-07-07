@@ -91,8 +91,8 @@ const TherapistDashboard = ({ handleLogout }) => {
     let cognitiveProfile = '';
     let recommendations = '';
     
-    if (child.games['kitten-match'].score > 85) {
-      cognitiveProfile += 'Strong visual-spatial processing and memory retention. ';
+    if (child.games['pacman'].score > 85) {
+      cognitiveProfile += 'Strong hand-eye coordination and quick reflexes. ';
     }
     if (child.games['missing-letter-pop'].score > 80) {
       cognitiveProfile += 'Good linguistic processing and phonemic awareness. ';
@@ -118,10 +118,10 @@ const TherapistDashboard = ({ handleLogout }) => {
   };
 
   const getRadarData = (child) => [
-    { subject: 'Memory', A: child.games['kitten-match'].score },
+    { subject: 'Coordination', A: child.games['pacman'].score },
     { subject: 'Language', A: child.games['missing-letter-pop'].score },
     { subject: 'Creativity', A: child.games['art-studio'].score },
-    { subject: 'Speed', A: Math.max(0, 100 - child.games['kitten-match'].time / 2) },
+    { subject: 'Speed', A: Math.max(0, 100 - child.games['pacman'].time / 2) },
     { subject: 'Accuracy', A: Math.max(0, 100 - child.games['missing-letter-pop'].attempts * 10) },
     { subject: 'Consistency', A: Math.min(100, child.overallProgress + 10) }
   ];
@@ -167,8 +167,8 @@ const TherapistDashboard = ({ handleLogout }) => {
         
         <div className="therapist-child-scores">
           <div className="therapist-score-item">
-            <p className="therapist-score-label">Memory</p>
-            <p className="therapist-score-value">{child.games['kitten-match'].score}</p>
+            <p className="therapist-score-label">Coordination</p>
+            <p className="therapist-score-value">{child.games['pacman'].score}</p>
           </div>
           <div className="therapist-score-item">
             <p className="therapist-score-label">Language</p>
@@ -303,27 +303,27 @@ const TherapistDashboard = ({ handleLogout }) => {
 
         <div className="therapist-game-performance-grid">
           <div className="therapist-glass-card therapist-game-card">
-            <h4 className="therapist-game-title">🐱 Kitten Matching</h4>
+            <h4 className="therapist-game-title">� PacMan Quest</h4>
             <div className="therapist-game-stats">
               <div className="therapist-game-stat">
                 <span>Score:</span>
-                <span className="therapist-game-stat-value">{child.games['kitten-match'].score}</span>
+                <span className="therapist-game-stat-value">{child.games['pacman'].score}</span>
               </div>
               <div className="therapist-game-stat">
                 <span>Time:</span>
-                <span>{child.games['kitten-match'].time}s</span>
+                <span>{child.games['pacman'].time}s</span>
               </div>
               <div className="therapist-game-stat">
                 <span>Attempts:</span>
-                <span>{child.games['kitten-match'].attempts}</span>
+                <span>{child.games['pacman'].attempts}</span>
               </div>
               <div className="therapist-game-stat">
                 <span>Improvement:</span>
-                <span className="therapist-improvement-positive">+{child.games['kitten-match'].improvement}%</span>
+                <span className="therapist-improvement-positive">+{child.games['pacman'].improvement}%</span>
               </div>
               <div className="therapist-game-stat">
                 <span>Total Played:</span>
-                <span>{child.games['kitten-match'].totalPlayed}</span>
+                <span>{child.games['pacman'].totalPlayed}</span>
               </div>
             </div>
           </div>
@@ -834,7 +834,7 @@ const TherapistDashboard = ({ handleLogout }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={childrenData.map(child => ({
                   name: child.name.split(' ')[0],
-                  Memory: child.games['kitten-match'].score,
+                  Coordination: child.games['pacman'].score,
                   Language: child.games['missing-letter-pop'].score,
                   Creativity: child.games['art-studio'].score
                 }))}>
@@ -849,7 +849,7 @@ const TherapistDashboard = ({ handleLogout }) => {
                       color: 'white'
                     }}
                   />
-                  <Bar dataKey="Memory" fill="#8884d8" />
+                  <Bar dataKey="Coordination" fill="#feca57" />
                   <Bar dataKey="Language" fill="#82ca9d" />
                   <Bar dataKey="Creativity" fill="#ffc658" />
                 </BarChart>

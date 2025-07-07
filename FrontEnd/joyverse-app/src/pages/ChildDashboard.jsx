@@ -33,12 +33,12 @@ const ChildDashboard = () => {
   const activities = [
     {
       id: 1,
-      title: '🎮 Memory Games',
-      description: 'Play fun memory games with cute animals!',
-      color: '#ff6b6b',
+      title: '🟡 PacMan Quest',
+      description: 'Eat colorful dots and avoid the walls!',
+      color: '#feca57',
       icon: Gamepad2,
-      emoji: '🐱',
-      onClick: () => navigate('/games/kitten-match')
+      emoji: '�',
+      onClick: () => navigate('/games/pacman')
     },
     {
       id: 2,
@@ -75,15 +75,6 @@ const ChildDashboard = () => {
       icon: Music,
       emoji: '🎵',
       onClick: () => navigate('/games/music-fun')
-    },
-    {
-      id: 6,
-      title: '🟡 PacMan Quest',
-      description: 'Eat colorful dots and avoid the walls!',
-      color: '#feca57',
-      icon: Gamepad2,
-      emoji: '🟡',
-      onClick: () => navigate('/games/pacman')
     }
   ];
 

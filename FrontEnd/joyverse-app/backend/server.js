@@ -773,7 +773,7 @@ app.get('/api/users', authenticateToken, async (req, res) => {
 
 // Save Game Score
 app.post('/api/game-scores', authenticateToken, [
-  body('gameType').isIn(['kitten-match', 'missing-letter-pop', 'art-studio']),
+  body('gameType').isIn(['pacman', 'missing-letter-pop', 'art-studio']),
   body('score').isNumeric().isInt({ min: 0 }),
   body('maxScore').optional().isNumeric(),
   body('timeTaken').optional().isNumeric(),
@@ -991,7 +991,7 @@ app.get('/api/therapist/children', authenticateToken, async (req, res) => {
 
         // Group scores by game type and calculate analytics
         const gameAnalytics = {};
-        const gameTypes = ['kitten-match', 'missing-letter-pop', 'art-studio'];
+        const gameTypes = ['pacman', 'missing-letter-pop', 'art-studio'];
         
         gameTypes.forEach(gameType => {
           const typeScores = gameScores.filter(score => score.gameType === gameType);
@@ -1068,8 +1068,8 @@ app.get('/api/therapist/children', authenticateToken, async (req, res) => {
         const strengths = [];
         const challenges = [];
         
-        if (gameAnalytics['kitten-match'].score > 80) strengths.push('Visual Memory');
-        else if (gameAnalytics['kitten-match'].score < 60) challenges.push('Visual Processing');
+        if (gameAnalytics['pacman'].score > 80) strengths.push('Hand-Eye Coordination');
+        else if (gameAnalytics['pacman'].score < 60) challenges.push('Motor Skills');
         
         if (gameAnalytics['missing-letter-pop'].score > 80) strengths.push('Language Skills');
         else if (gameAnalytics['missing-letter-pop'].score < 60) challenges.push('Phonemic Awareness');
@@ -1107,7 +1107,7 @@ app.get('/api/therapist/children', authenticateToken, async (req, res) => {
           parentEmail: child.parentEmail,
           registeredAt: child.createdAt,
           games: {
-            'kitten-match': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 },
+            'pacman': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 },
             'missing-letter-pop': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 },
             'art-studio': { score: 0, bestScore: 0, time: 0, attempts: 0, improvement: 0, totalPlayed: 0 }
           },

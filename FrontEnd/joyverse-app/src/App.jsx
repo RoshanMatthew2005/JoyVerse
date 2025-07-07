@@ -10,7 +10,6 @@ import {
   ChildDashboard,
   TherapistDashboard,
   SuperAdminDashboard,
-  KittenMatchGamePage,
   MissingLetterPopPage,
   ArtStudioPage,
   SpaceMathGamePage,
@@ -114,14 +113,6 @@ const JoyverseAppContent = () => {
         />
         
         {/* Game Routes */}
-        <Route 
-          path="/games/kitten-match" 
-          element={
-            <ProtectedRoute requiredUserType="child">
-              <KittenMatchGamePage />
-            </ProtectedRoute>
-          } 
-        />
         <Route 
           path="/games/missing-letter-pop" 
           element={

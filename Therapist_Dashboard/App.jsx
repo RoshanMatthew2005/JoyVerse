@@ -17,7 +17,7 @@ const TherapistDashboard = () => {
       name: 'Emma Johnson',
       age: 8,
       games: {
-        kittenMatching: { score: 85, time: 120, attempts: 3, improvement: 15 },
+        pacman: { score: 85, time: 120, attempts: 3, improvement: 15 },
         spaceMath: { score: 72, time: 180, attempts: 5, improvement: 8 },
         bubblePop: { score: 91, time: 95, attempts: 2, improvement: 12 }
       },
@@ -37,7 +37,7 @@ const TherapistDashboard = () => {
       name: 'Oliver Smith',
       age: 9,
       games: {
-        kittenMatching: { score: 78, time: 140, attempts: 4, improvement: 10 },
+        pacman: { score: 78, time: 140, attempts: 4, improvement: 10 },
         spaceMath: { score: 88, time: 150, attempts: 3, improvement: 18 },
         bubblePop: { score: 75, time: 110, attempts: 4, improvement: 6 }
       },
@@ -57,7 +57,7 @@ const TherapistDashboard = () => {
       name: 'Sophia Davis',
       age: 7,
       games: {
-        kittenMatching: { score: 92, time: 100, attempts: 2, improvement: 20 },
+        pacman: { score: 92, time: 100, attempts: 2, improvement: 20 },
         spaceMath: { score: 68, time: 200, attempts: 6, improvement: 5 },
         bubblePop: { score: 87, time: 85, attempts: 3, improvement: 14 }
       },
@@ -77,7 +77,7 @@ const TherapistDashboard = () => {
       name: 'Lucas Wilson',
       age: 10,
       games: {
-        kittenMatching: { score: 73, time: 160, attempts: 5, improvement: 7 },
+        pacman: { score: 73, time: 160, attempts: 5, improvement: 7 },
         spaceMath: { score: 81, time: 170, attempts: 4, improvement: 12 },
         bubblePop: { score: 79, time: 125, attempts: 3, improvement: 9 }
       },
@@ -186,14 +186,14 @@ const TherapistDashboard = () => {
   };
 
   const generateAnalysis = (child) => {
-    const avgScore = Math.round((child.games.kittenMatching.score + child.games.spaceMath.score + child.games.bubblePop.score) / 3);
-    const avgImprovement = Math.round((child.games.kittenMatching.improvement + child.games.spaceMath.improvement + child.games.bubblePop.improvement) / 3);
+    const avgScore = Math.round((child.games.pacman.score + child.games.spaceMath.score + child.games.bubblePop.score) / 3);
+    const avgImprovement = Math.round((child.games.pacman.improvement + child.games.spaceMath.improvement + child.games.bubblePop.improvement) / 3);
     
     let cognitiveProfile = '';
     let recommendations = '';
     
-    if (child.games.kittenMatching.score > 85) {
-      cognitiveProfile += 'Strong visual-spatial processing and memory retention. ';
+    if (child.games.pacman.score > 85) {
+      cognitiveProfile += 'Strong hand-eye coordination and quick reflexes. ';
     }
     if (child.games.spaceMath.score > 80) {
       cognitiveProfile += 'Good mathematical reasoning and number sense. ';
@@ -219,10 +219,10 @@ const TherapistDashboard = () => {
   };
 
   const getRadarData = (child) => [
-    { subject: 'Memory', A: child.games.kittenMatching.score },
+    { subject: 'Coordination', A: child.games.pacman.score },
     { subject: 'Math Skills', A: child.games.spaceMath.score },
     { subject: 'Attention', A: child.games.bubblePop.score },
-    { subject: 'Speed', A: Math.max(0, 100 - child.games.kittenMatching.time / 2) },
+    { subject: 'Speed', A: Math.max(0, 100 - child.games.pacman.time / 2) },
     { subject: 'Accuracy', A: Math.max(0, 100 - child.games.spaceMath.attempts * 10) },
     { subject: 'Consistency', A: Math.min(100, child.overallProgress + 10) }
   ];
@@ -268,8 +268,8 @@ const TherapistDashboard = () => {
         
         <div className="child-scores">
           <div className="score-item">
-            <p className="score-label">Memory</p>
-            <p className="score-value">{child.games.kittenMatching.score}</p>
+            <p className="score-label">Coordination</p>
+            <p className="score-value">{child.games.pacman.score}</p>
           </div>
           <div className="score-item">
             <p className="score-label">Math</p>
@@ -382,23 +382,23 @@ const TherapistDashboard = () => {
 
         <div className="game-performance-grid">
           <div className="glass-card game-card">
-            <h4 className="game-title">🐱 Kitten Matching</h4>
+            <h4 className="game-title">� PacMan Quest</h4>
             <div className="game-stats">
               <div className="game-stat">
                 <span>Score:</span>
-                <span className="game-stat-value">{child.games.kittenMatching.score}</span>
+                <span className="game-stat-value">{child.games.pacman.score}</span>
               </div>
               <div className="game-stat">
                 <span>Time:</span>
-                <span>{child.games.kittenMatching.time}s</span>
+                <span>{child.games.pacman.time}s</span>
               </div>
               <div className="game-stat">
                 <span>Attempts:</span>
-                <span>{child.games.kittenMatching.attempts}</span>
+                <span>{child.games.pacman.attempts}</span>
               </div>
               <div className="game-stat">
                 <span>Improvement:</span>
-                <span className="improvement-positive">+{child.games.kittenMatching.improvement}%</span>
+                <span className="improvement-positive">+{child.games.pacman.improvement}%</span>
               </div>
             </div>
           </div>
@@ -643,7 +643,7 @@ const TherapistDashboard = () => {
           <StatCard 
             title="Avg Improvement"
             value={`${Math.round(childrenData.reduce((acc, child) => {
-              const avgImp = (child.games.kittenMatching.improvement + child.games.spaceMath.improvement + child.games.bubblePop.improvement) / 3;
+              const avgImp = (child.games.pacman.improvement + child.games.spaceMath.improvement + child.games.bubblePop.improvement) / 3;
               return acc + avgImp;
             }, 0) / childrenData.length)}%`}
             icon={Award}
@@ -672,7 +672,7 @@ const TherapistDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={childrenData.map(child => ({
                   name: child.name.split(' ')[0],
-                  Memory: child.games.kittenMatching.score,
+                  Coordination: child.games.pacman.score,
                   Math: child.games.spaceMath.score,
                   Attention: child.games.bubblePop.score
                 }))}>
@@ -687,7 +687,7 @@ const TherapistDashboard = () => {
                       color: 'white'
                     }}
                   />
-                  <Bar dataKey="Memory" fill="#8884d8" />
+                  <Bar dataKey="Coordination" fill="#feca57" />
                   <Bar dataKey="Math" fill="#82ca9d" />
                   <Bar dataKey="Attention" fill="#ffc658" />
                 </BarChart>
