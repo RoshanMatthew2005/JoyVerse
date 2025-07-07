@@ -614,15 +614,48 @@ const MissingLetterPop = ({ onClose, user }) => {
             )}
           </div>
           
-          {/* Word Display */}
-          <div className="word-display">
-            {createWordDisplay()}
-          </div>
-
-          {/* Stats */}
-          <div className="stats-container">
-            <div className="stat-box">Score: {score}</div>
-            <div className="stat-box">Time: {timeLeft}s</div>
+          {/* Word Display and Stats in Header - Slightly Left of Center */}
+          <div style={{ 
+            display: 'flex',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            width: '100%',
+            marginTop: '1rem',
+            paddingLeft: '25%'
+          }}>
+            <div className="centered-game-info" style={{ 
+              position: 'relative', 
+              top: 'auto', 
+              left: 'auto', 
+              transform: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <div className="word-display-centered" style={{ 
+                fontSize: '1.5rem', 
+                padding: '0.5rem 1rem',
+                minHeight: '2rem'
+              }}>
+                {createWordDisplay()}
+              </div>
+              <div className="stats-container-centered" style={{ 
+                gap: '1rem',
+                padding: '0.5rem'
+              }}>
+                <div className="stat-box" style={{ 
+                  padding: '0.25rem 0.75rem',
+                  fontSize: '0.9rem',
+                  minWidth: '4rem'
+                }}>Score: {score}</div>
+                <div className="stat-box" style={{ 
+                  padding: '0.25rem 0.75rem',
+                  fontSize: '0.9rem',
+                  minWidth: '4rem'
+                }}>Time: {timeLeft}s</div>
+              </div>
+            </div>
           </div>
         </div>
 
