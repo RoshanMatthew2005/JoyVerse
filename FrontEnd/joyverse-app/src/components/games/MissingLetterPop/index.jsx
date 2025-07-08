@@ -28,7 +28,7 @@ const MissingLetterPop = ({ onClose, user }) => {
   const [emotionConfidence, setEmotionConfidence] = useState(0);
   const [showEmotionDisplay, setShowEmotionDisplay] = useState(true);
   const [emotionCapturing, setEmotionCapturing] = useState(false);
-  const [showCameraPreview, setShowCameraPreview] = useState(false);
+  const [showCameraPreview, setShowCameraPreview] = useState(true);
   const emotionCaptureRef = useRef(null);
 
   // Refs
@@ -72,8 +72,6 @@ const MissingLetterPop = ({ onClose, user }) => {
     // Update the game theme based on detected emotion
     const newTheme = emotionThemeMap[emotion] || emotionThemeMap.default;
     setCurrentTheme(newTheme);
-    
-    console.log(`🎭 Emotion detected: ${emotion} (${Math.round(confidence * 100)}%) - Theme changed to ${newTheme}`);
   }, [emotionThemeMap]);
   
   // Start emotion detection on game start
@@ -146,7 +144,7 @@ const MissingLetterPop = ({ onClose, user }) => {
         oscillator.stop();
       }, 300);
     } catch (e) {
-      console.log("Audio error:", e);
+      // Audio not available
     }
   }, [soundEnabled]);
 
@@ -383,7 +381,6 @@ const MissingLetterPop = ({ onClose, user }) => {
   // Cleanup effect
   useEffect(() => {
     return () => {
-      console.log('🧹 Cleaning up Missing Letter Pop Game');
       stopEmotionDetection();
       if (emotionCaptureRef.current) {
         clearInterval(emotionCaptureRef.current);
@@ -396,24 +393,26 @@ const MissingLetterPop = ({ onClose, user }) => {
   const saveGameScore = async () => {
     try {
       const timeTaken = gameStartTime ? Math.round((Date.now() - gameStartTime) / 1000) : 60;
+      const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      
       const gameData = {
         score,
-        maxScore: totalQuestions * 50, // Assuming 50 points per correct answer
+        maxScore: totalQuestions * 10, // 10 points per correct answer
         timeTaken,
-        level: 1,
+        level: 1, // Missing Letter Pop is single level
         correctAnswers,
         totalQuestions,
         mistakes,
         wordsCompleted: correctAnswers,
+        accuracy,
         emotion: currentEmotion || 'unknown',
         emotionUsed: cameraActive
       };
       
       const formattedData = gameScoreService.formatGameData('missing-letter-pop', gameData);
       await gameScoreService.saveGameScore(formattedData);
-      console.log('Game score saved successfully');
     } catch (error) {
-      console.error('Failed to save game score:', error);
+      console.error('❌ MissingLetterPop: Failed to save game score:', error);
     }
   };
 
@@ -835,27 +834,61 @@ const MissingLetterPop = ({ onClose, user }) => {
         </div>
       )}
 
-      {/* Debug Panel for Face Detection */}
+      {/* Camera Controls */}
       {gameActive && (
         <div style={{
           position: 'absolute',
           top: '20px',
           right: '20px',
-          background: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          padding: '10px 15px',
-          borderRadius: '10px',
+          background: 'rgba(255, 255, 255, 0.95)',
+          color: '#333',
+          padding: '15px',
+          borderRadius: '15px',
           fontSize: '14px',
           zIndex: 999999,
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px'
+          gap: '10px',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          minWidth: '200px'
         }}>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid #555', paddingBottom: '5px' }}>
-            Face Detection Debug
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#4a5568', marginBottom: '8px' }}>
+            📹 Camera & Emotion
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Emotion Display */}
+          {currentEmotion && (
+            <div style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              fontWeight: '600'
+            }}>
+              😊 {currentEmotion} ({Math.round(emotionConfidence * 100)}%)
+            </div>
+          )}
+          
+          {/* Camera Status */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            color: '#666'
+          }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: cameraActive ? '#10b981' : '#ef4444'
+            }}></div>
+            Camera: {cameraActive ? 'Active' : 'Inactive'}
+          </div>
+          
+          {/* Control Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <button 
               onClick={() => {
                 setShowCameraPreview(true);
@@ -866,12 +899,14 @@ const MissingLetterPop = ({ onClose, user }) => {
                 background: '#3b82f6',
                 color: 'white',
                 border: 'none',
-                borderRadius: '5px',
+                borderRadius: '8px',
                 padding: '8px 12px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600'
               }}
             >
-              Restart Camera with Preview
+              🔄 Restart Camera
             </button>
             
             <button 
@@ -880,33 +915,15 @@ const MissingLetterPop = ({ onClose, user }) => {
                 background: '#10b981',
                 color: 'white',
                 border: 'none',
-                borderRadius: '5px',
+                borderRadius: '8px',
                 padding: '8px 12px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600'
               }}
             >
-              Test Face Detection
+              🧪 Test Detection
             </button>
-            
-            <button 
-              onClick={testCameraStatus}
-              style={{
-                background: '#f59e0b',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                padding: '8px 12px',
-                cursor: 'pointer'
-              }}
-            >
-              Test Camera Access
-            </button>
-            
-            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '5px' }}>
-              <p>Camera Status: {cameraActive ? 'Active' : 'Inactive'}</p>
-              {currentEmotion && <p>Last Emotion: {currentEmotion} ({Math.round(emotionConfidence * 100)}%)</p>}
-              <p>Preview: {showCameraPreview ? 'Visible' : 'Hidden'}</p>
-            </div>
           </div>
         </div>
       )}

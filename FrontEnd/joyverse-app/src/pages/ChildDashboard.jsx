@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Palette, BookOpen, Star, Heart, Smile, Award, User, Clock, Gamepad2, Music, Zap, Sun, Gift, Rocket } from 'lucide-react';
+import { Play, Palette, BookOpen, Star, Heart, Smile, Award, User, Clock, Gamepad2, Music, Zap, Sun, Gift } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import GameStats from '../components/GameStats';
@@ -37,7 +37,7 @@ const ChildDashboard = () => {
       description: 'Eat colorful dots and avoid the walls!',
       color: '#feca57',
       icon: Gamepad2,
-      emoji: '�',
+      emoji: '🟡',
       onClick: () => navigate('/games/pacman')
     },
     {
@@ -51,15 +51,6 @@ const ChildDashboard = () => {
     },
     {
       id: 3,
-      title: '🚀 Space Math Quest',
-      description: 'Explore planets while solving math problems!',
-      color: '#a55eea',
-      icon: Rocket,
-      emoji: '🚀',
-      onClick: () => navigate('/games/space-math')
-    },
-    {
-      id: 4,
       title: '🎨 Art & Drawing',
       description: 'Create beautiful artwork and drawings!',
       color: '#4ecdc4',
@@ -68,14 +59,24 @@ const ChildDashboard = () => {
       onClick: () => navigate('/games/art-studio')
     },
     {
-      id: 5,
+      id: 4,
       title: '🎵 Music Fun',
       description: 'Listen to songs and make music!',
       color: '#96ceb4',
       icon: Music,
       emoji: '🎵',
       onClick: () => navigate('/games/music-fun')
+    },
+    {
+      id: 5,
+      title: '🚀 Space Math',
+      description: 'Solve math problems and explore the galaxy!',
+      color: '#e74c3c',
+      icon: Zap,
+      emoji: '🚀',
+      onClick: () => navigate('/games/space-math')
     }
+
   ];
 
   // Update time
@@ -297,7 +298,7 @@ const ChildDashboard = () => {
             lineHeight: '1.6'
           }}>
             Choose an activity below and let's have some amazing fun together! 🎉<br/>
-            Play memory games with cute animals or pop bubbles to find missing letters!
+            Play games, create art, make music, and learn new things!
           </p>
           <div style={{
             background: `linear-gradient(45deg, ${currentThemeColors[0]}, ${currentThemeColors[1]})`,

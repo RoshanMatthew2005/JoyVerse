@@ -2,30 +2,27 @@
 .therapist-dashboard-container {
   min-height: 100vh;
   background: 
-    /* Medical pattern overlay */
-    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-    /* Subtle medical cross pattern */
-    linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.02) 49%, rgba(255, 255, 255, 0.02) 51%, transparent 52%),
-    linear-gradient(0deg, transparent 48%, rgba(255, 255, 255, 0.02) 49%, rgba(255, 255, 255, 0.02) 51%, transparent 52%),
-    /* Main gradient background */
-    linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #3730a3 50%, #4c1d95 75%, #581c87 100%);
+    /* Dark gradient with teal/cyan-blue glow in center */
+    radial-gradient(ellipse at center, rgba(20, 184, 166, 0.15) 0%, rgba(6, 182, 212, 0.1) 25%, transparent 70%),
+    radial-gradient(ellipse at center, rgba(8, 145, 178, 0.12) 0%, transparent 50%),
+    /* Deep navy to black gradient at edges */
+    linear-gradient(135deg, #0f172a 0%, #1e293b 20%, #334155 35%, #1e293b 65%, #0f172a 100%),
+    /* Subtle overlay pattern */
+    linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.01) 49%, rgba(255, 255, 255, 0.01) 51%, transparent 52%),
+    linear-gradient(0deg, transparent 48%, rgba(255, 255, 255, 0.01) 49%, rgba(255, 255, 255, 0.01) 51%, transparent 52%);
   background-size: 
-    100% 100%,
-    100% 100%,
+    80% 60%,
+    60% 40%,
     100% 100%,
     60px 60px,
-    60px 60px,
-    400% 400%;
+    60px 60px;
   background-position:
-    0% 0%,
-    0% 0%,
+    center center,
+    center center,
     0% 0%,
     0 0,
-    0 0,
-    0% 50%;
-  animation: therapistGradientShift 20s ease infinite, medicalPulse 8s ease-in-out infinite alternate;
+    0 0;
+  animation: darkGradientShift 25s ease infinite, subtlePulse 12s ease-in-out infinite alternate;
   padding: 1rem;
   transition: all 0.3s ease;
   color: white;
@@ -71,20 +68,20 @@
   z-index: 1;
 }
 
-@keyframes therapistGradientShift {
-  0% { background-position: 0% 50%, 0% 0%, 0% 0%, 0 0, 0 0, 0% 50%; }
-  25% { background-position: 50% 25%, 25% 25%, 25% 25%, 15px 15px, 15px 15px, 25% 75%; }
-  50% { background-position: 100% 50%, 50% 50%, 50% 50%, 30px 30px, 30px 30px, 100% 50%; }
-  75% { background-position: 50% 75%, 75% 75%, 75% 75%, 45px 45px, 45px 45px, 75% 25%; }
-  100% { background-position: 0% 50%, 0% 0%, 0% 0%, 0 0, 0 0, 0% 50%; }
+@keyframes darkGradientShift {
+  0% { background-position: center center, center center, 0% 50%, 0 0, 0 0; }
+  25% { background-position: 45% 40%, 40% 45%, 25% 75%, 15px 15px, 15px 15px; }
+  50% { background-position: 55% 60%, 60% 55%, 100% 50%, 30px 30px, 30px 30px; }
+  75% { background-position: 60% 45%, 55% 40%, 75% 25%, 45px 45px, 45px 45px; }
+  100% { background-position: center center, center center, 0% 50%, 0 0, 0 0; }
 }
 
-@keyframes medicalPulse {
+@keyframes subtlePulse {
   0% { 
     filter: brightness(1) saturate(1);
   }
   100% { 
-    filter: brightness(1.05) saturate(1.1);
+    filter: brightness(1.03) saturate(1.05);
   }
 }
 

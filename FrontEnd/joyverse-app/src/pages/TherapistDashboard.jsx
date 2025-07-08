@@ -6,7 +6,7 @@ import gameScoreService from '../services/gameScoreAPI';
 import '../styles/TherapistDashboard.css';
 
 const TherapistDashboard = ({ handleLogout }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [selectedChild, setSelectedChild] = useState(null);
   const [childrenData, setChildrenData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,21 +84,22 @@ const TherapistDashboard = ({ handleLogout }) => {
   };
 
   const generateAnalysis = (child) => {
-    const gameTypes = Object.keys(child.games);
-    const avgScore = Math.round(gameTypes.reduce((sum, game) => sum + child.games[game].score, 0) / gameTypes.length);
-    const avgImprovement = Math.round(gameTypes.reduce((sum, game) => sum + child.games[game].improvement, 0) / gameTypes.length);
+    const allowedGames = ['pacman', 'missing-letter-pop'];
+    const gameTypes = Object.keys(child.games).filter(game => allowedGames.includes(game));
+    const avgScore = gameTypes.length > 0 ? Math.round(gameTypes.reduce((sum, game) => sum + child.games[game].score, 0) / gameTypes.length) : 0;
+    const avgImprovement = gameTypes.length > 0 ? Math.round(gameTypes.reduce((sum, game) => sum + child.games[game].improvement, 0) / gameTypes.length) : 0;
     
     let cognitiveProfile = '';
     let recommendations = '';
     
-    if (child.games['pacman'].score > 85) {
+    if (child.games['pacman']?.score > 85) {
       cognitiveProfile += 'Strong hand-eye coordination and quick reflexes. ';
     }
-    if (child.games['missing-letter-pop'].score > 80) {
+    if (child.games['missing-letter-pop']?.score > 80) {
       cognitiveProfile += 'Good linguistic processing and phonemic awareness. ';
     }
-    if (child.games['art-studio'].score > 85) {
-      cognitiveProfile += 'Excellent creative expression and fine motor skills. ';
+    if (child.games['missing-letter-pop']?.score > 85) {
+      cognitiveProfile += 'Excellent mathematical reasoning and problem-solving skills. ';
     }
     
     if (avgImprovement > 12) {
@@ -118,11 +119,11 @@ const TherapistDashboard = ({ handleLogout }) => {
   };
 
   const getRadarData = (child) => [
-    { subject: 'Coordination', A: child.games['pacman'].score },
-    { subject: 'Language', A: child.games['missing-letter-pop'].score },
-    { subject: 'Creativity', A: child.games['art-studio'].score },
-    { subject: 'Speed', A: Math.max(0, 100 - child.games['pacman'].time / 2) },
-    { subject: 'Accuracy', A: Math.max(0, 100 - child.games['missing-letter-pop'].attempts * 10) },
+    { subject: 'Coordination', A: child.games['pacman']?.score || 0 },
+    { subject: 'Language', A: child.games['missing-letter-pop']?.score || 0 },
+    { subject: 'Word Skills', A: child.games['missing-letter-pop']?.score || 0 },
+    { subject: 'Speed', A: Math.max(0, 100 - (child.games['pacman']?.time || 100) / 2) },
+    { subject: 'Accuracy', A: Math.max(0, 100 - (child.games['missing-letter-pop']?.attempts || 10) * 10) },
     { subject: 'Consistency', A: Math.min(100, child.overallProgress + 10) }
   ];
 
@@ -168,15 +169,15 @@ const TherapistDashboard = ({ handleLogout }) => {
         <div className="therapist-child-scores">
           <div className="therapist-score-item">
             <p className="therapist-score-label">Coordination</p>
-            <p className="therapist-score-value">{child.games['pacman'].score}</p>
+            <p className="therapist-score-value">{child.games['pacman']?.score || 0}</p>
           </div>
           <div className="therapist-score-item">
             <p className="therapist-score-label">Language</p>
-            <p className="therapist-score-value">{child.games['missing-letter-pop'].score}</p>
+            <p className="therapist-score-value">{child.games['missing-letter-pop']?.score || 0}</p>
           </div>
           <div className="therapist-score-item">
-            <p className="therapist-score-label">Creativity</p>
-            <p className="therapist-score-value">{child.games['art-studio'].score}</p>
+            <p className="therapist-score-label">Math Skills</p>
+            <p className="therapist-score-value">{child.games['missing-letter-pop']?.score || 0}</p>
           </div>
         </div>
         
@@ -350,32 +351,6 @@ const TherapistDashboard = ({ handleLogout }) => {
               <div className="therapist-game-stat">
                 <span>Total Played:</span>
                 <span>{child.games['missing-letter-pop'].totalPlayed}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="therapist-glass-card therapist-game-card">
-            <h4 className="therapist-game-title">🎨 Art Studio</h4>
-            <div className="therapist-game-stats">
-              <div className="therapist-game-stat">
-                <span>Score:</span>
-                <span className="therapist-game-stat-value">{child.games['art-studio'].score}</span>
-              </div>
-              <div className="therapist-game-stat">
-                <span>Time:</span>
-                <span>{child.games['art-studio'].time}s</span>
-              </div>
-              <div className="therapist-game-stat">
-                <span>Attempts:</span>
-                <span>{child.games['art-studio'].attempts}</span>
-              </div>
-              <div className="therapist-game-stat">
-                <span>Improvement:</span>
-                <span className="therapist-improvement-positive">+{child.games['art-studio'].improvement}%</span>
-              </div>
-              <div className="therapist-game-stat">
-                <span>Total Played:</span>
-                <span>{child.games['art-studio'].totalPlayed}</span>
               </div>
             </div>
           </div>
@@ -735,10 +710,10 @@ const TherapistDashboard = ({ handleLogout }) => {
           <p className="therapist-dashboard-subtitle">
             Comprehensive cognitive assessment and progress tracking for children with learning differences
           </p>
-          {handleLogout && (
+          {(handleLogout || logout) && (
             <div className="therapist-header-actions">
               <span className="therapist-welcome-text">Welcome, Dr. {user?.fullName || 'Therapist'}</span>
-              <button onClick={handleLogout} className="therapist-logout-button">
+              <button onClick={handleLogout || logout} className="therapist-logout-button">
                 Logout
               </button>
             </div>
@@ -834,9 +809,9 @@ const TherapistDashboard = ({ handleLogout }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={childrenData.map(child => ({
                   name: child.name.split(' ')[0],
-                  Coordination: child.games['pacman'].score,
-                  Language: child.games['missing-letter-pop'].score,
-                  Creativity: child.games['art-studio'].score
+                  Coordination: child.games['pacman']?.score || 0,
+                  Language: child.games['missing-letter-pop']?.score || 0,
+                  'Word Skills': child.games['missing-letter-pop']?.score || 0
                 }))}>
                   <CartesianGrid strokeDasharray="3,3" stroke="#ffffff30" />
                   <XAxis dataKey="name" stroke="#ffffff80" />
@@ -851,7 +826,7 @@ const TherapistDashboard = ({ handleLogout }) => {
                   />
                   <Bar dataKey="Coordination" fill="#feca57" />
                   <Bar dataKey="Language" fill="#82ca9d" />
-                  <Bar dataKey="Creativity" fill="#ffc658" />
+                  <Bar dataKey="Math Skills" fill="#ff7c7c" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

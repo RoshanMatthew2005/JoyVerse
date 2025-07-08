@@ -10,8 +10,7 @@ import {
   ChildDashboard,
   TherapistDashboard,
   MissingLetterPopPage,
-  ArtStudioPage,
-  SpaceMathGamePage
+  ArtStudioPage
 } from './pages';
 
 // Protected Route Component
@@ -110,14 +109,6 @@ const JoyverseAppContent = () => {
           element={
             <ProtectedRoute requiredUserType="child">
               <ArtStudioPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/games/space-math" 
-          element={
-            <ProtectedRoute requiredUserType="child">
-              <SpaceMathGamePage />
             </ProtectedRoute>
           } 
         />

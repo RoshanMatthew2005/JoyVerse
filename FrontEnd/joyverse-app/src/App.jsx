@@ -11,10 +11,10 @@ import {
   TherapistDashboard,
   SuperAdminDashboard,
   MissingLetterPopPage,
+  PacManGamePage,
   ArtStudioPage,
-  SpaceMathGamePage,
   MusicFunPage,
-  PacManGamePage
+  SpaceMathGamePage
 } from './pages';
 
 // Protected Route Component
@@ -122,18 +122,18 @@ const JoyverseAppContent = () => {
           } 
         />
         <Route 
-          path="/games/art-studio" 
+          path="/games/pacman" 
           element={
             <ProtectedRoute requiredUserType="child">
-              <ArtStudioPage />
+              <PacManGamePage />
             </ProtectedRoute>
           } 
         />
         <Route 
-          path="/games/space-math" 
+          path="/games/art-studio" 
           element={
             <ProtectedRoute requiredUserType="child">
-              <SpaceMathGamePage />
+              <ArtStudioPage />
             </ProtectedRoute>
           } 
         />
@@ -146,10 +146,10 @@ const JoyverseAppContent = () => {
           } 
         />
         <Route 
-          path="/games/pacman" 
+          path="/games/space-math" 
           element={
             <ProtectedRoute requiredUserType="child">
-              <PacManGamePage />
+              <SpaceMathGamePage />
             </ProtectedRoute>
           } 
         />

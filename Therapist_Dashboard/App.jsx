@@ -18,8 +18,8 @@ const TherapistDashboard = () => {
       age: 8,
       games: {
         pacman: { score: 85, time: 120, attempts: 3, improvement: 15 },
-        spaceMath: { score: 72, time: 180, attempts: 5, improvement: 8 },
-        bubblePop: { score: 91, time: 95, attempts: 2, improvement: 12 }
+        'missing-letter-pop': { score: 72, time: 180, attempts: 5, improvement: 8 },
+        'missing-letter-pop': { score: 91, time: 95, attempts: 2, improvement: 12 }
       },
       overallProgress: 82,
       strengths: ['Visual Memory', 'Pattern Recognition'],
@@ -38,8 +38,8 @@ const TherapistDashboard = () => {
       age: 9,
       games: {
         pacman: { score: 78, time: 140, attempts: 4, improvement: 10 },
-        spaceMath: { score: 88, time: 150, attempts: 3, improvement: 18 },
-        bubblePop: { score: 75, time: 110, attempts: 4, improvement: 6 }
+        'missing-letter-pop': { score: 88, time: 150, attempts: 3, improvement: 18 },
+        'missing-letter-pop': { score: 75, time: 110, attempts: 4, improvement: 6 }
       },
       overallProgress: 80,
       strengths: ['Logical Thinking', 'Problem Solving'],
@@ -58,8 +58,8 @@ const TherapistDashboard = () => {
       age: 7,
       games: {
         pacman: { score: 92, time: 100, attempts: 2, improvement: 20 },
-        spaceMath: { score: 68, time: 200, attempts: 6, improvement: 5 },
-        bubblePop: { score: 87, time: 85, attempts: 3, improvement: 14 }
+        'missing-letter-pop': { score: 68, time: 200, attempts: 6, improvement: 5 },
+        'missing-letter-pop': { score: 87, time: 85, attempts: 3, improvement: 14 }
       },
       overallProgress: 86,
       strengths: ['Quick Processing', 'Visual Memory'],
@@ -78,8 +78,8 @@ const TherapistDashboard = () => {
       age: 10,
       games: {
         pacman: { score: 73, time: 160, attempts: 5, improvement: 7 },
-        spaceMath: { score: 81, time: 170, attempts: 4, improvement: 12 },
-        bubblePop: { score: 79, time: 125, attempts: 3, improvement: 9 }
+        'missing-letter-pop': { score: 81, time: 170, attempts: 4, improvement: 12 },
+        'missing-letter-pop': { score: 79, time: 125, attempts: 3, improvement: 9 }
       },
       overallProgress: 78,
       strengths: ['Persistence', 'Analytical Skills'],
@@ -186,8 +186,8 @@ const TherapistDashboard = () => {
   };
 
   const generateAnalysis = (child) => {
-    const avgScore = Math.round((child.games.pacman.score + child.games.spaceMath.score + child.games.bubblePop.score) / 3);
-    const avgImprovement = Math.round((child.games.pacman.improvement + child.games.spaceMath.improvement + child.games.bubblePop.improvement) / 3);
+    const avgScore = Math.round((child.games.pacman.score + child.games['missing-letter-pop'].score) / 2);
+    const avgImprovement = Math.round((child.games.pacman.improvement + child.games['missing-letter-pop'].improvement) / 2);
     
     let cognitiveProfile = '';
     let recommendations = '';
@@ -195,11 +195,11 @@ const TherapistDashboard = () => {
     if (child.games.pacman.score > 85) {
       cognitiveProfile += 'Strong hand-eye coordination and quick reflexes. ';
     }
-    if (child.games.spaceMath.score > 80) {
+    if (child.games['missing-letter-pop'].score > 80) {
       cognitiveProfile += 'Good mathematical reasoning and number sense. ';
     }
-    if (child.games.bubblePop.score > 85) {
-      cognitiveProfile += 'Excellent attention control and rapid decision-making. ';
+    if (child.games['missing-letter-pop'].score > 85) {
+      cognitiveProfile += 'Excellent linguistic processing and phonemic awareness. ';
     }
     
     if (avgImprovement > 12) {
@@ -220,10 +220,10 @@ const TherapistDashboard = () => {
 
   const getRadarData = (child) => [
     { subject: 'Coordination', A: child.games.pacman.score },
-    { subject: 'Math Skills', A: child.games.spaceMath.score },
-    { subject: 'Attention', A: child.games.bubblePop.score },
+    { subject: 'Word Skills', A: child.games['missing-letter-pop'].score },
+    { subject: 'Language', A: child.games['missing-letter-pop'].score },
     { subject: 'Speed', A: Math.max(0, 100 - child.games.pacman.time / 2) },
-    { subject: 'Accuracy', A: Math.max(0, 100 - child.games.spaceMath.attempts * 10) },
+    { subject: 'Accuracy', A: Math.max(0, 100 - child.games['missing-letter-pop'].attempts * 10) },
     { subject: 'Consistency', A: Math.min(100, child.overallProgress + 10) }
   ];
 
@@ -273,11 +273,11 @@ const TherapistDashboard = () => {
           </div>
           <div className="score-item">
             <p className="score-label">Math</p>
-            <p className="score-value">{child.games.spaceMath.score}</p>
+            <p className="score-value">{child.games['missing-letter-pop'].score}</p>
           </div>
           <div className="score-item">
-            <p className="score-label">Attention</p>
-            <p className="score-value">{child.games.bubblePop.score}</p>
+            <p className="score-label">Language</p>
+            <p className="score-value">{child.games['missing-letter-pop'].score}</p>
           </div>
         </div>
         
@@ -404,45 +404,23 @@ const TherapistDashboard = () => {
           </div>
 
           <div className="glass-card game-card">
-            <h4 className="game-title">🚀 Space Math</h4>
+            <h4 className="game-title"> Missing Letter Pop</h4>
             <div className="game-stats">
               <div className="game-stat">
                 <span>Score:</span>
-                <span className="game-stat-value">{child.games.spaceMath.score}</span>
+                <span className="game-stat-value">{child.games['missing-letter-pop'].score}</span>
               </div>
               <div className="game-stat">
                 <span>Time:</span>
-                <span>{child.games.spaceMath.time}s</span>
+                <span>{child.games['missing-letter-pop'].time}s</span>
               </div>
               <div className="game-stat">
                 <span>Attempts:</span>
-                <span>{child.games.spaceMath.attempts}</span>
+                <span>{child.games['missing-letter-pop'].attempts}</span>
               </div>
               <div className="game-stat">
                 <span>Improvement:</span>
-                <span className="improvement-positive">+{child.games.spaceMath.improvement}%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card game-card">
-            <h4 className="game-title">🫧 Bubble Pop</h4>
-            <div className="game-stats">
-              <div className="game-stat">
-                <span>Score:</span>
-                <span className="game-stat-value">{child.games.bubblePop.score}</span>
-              </div>
-              <div className="game-stat">
-                <span>Time:</span>
-                <span>{child.games.bubblePop.time}s</span>
-              </div>
-              <div className="game-stat">
-                <span>Attempts:</span>
-                <span>{child.games.bubblePop.attempts}</span>
-              </div>
-              <div className="game-stat">
-                <span>Improvement:</span>
-                <span className="improvement-positive">+{child.games.bubblePop.improvement}%</span>
+                <span className="improvement-positive">+{child.games['missing-letter-pop'].improvement}%</span>
               </div>
             </div>
           </div>
@@ -643,7 +621,7 @@ const TherapistDashboard = () => {
           <StatCard 
             title="Avg Improvement"
             value={`${Math.round(childrenData.reduce((acc, child) => {
-              const avgImp = (child.games.pacman.improvement + child.games.spaceMath.improvement + child.games.bubblePop.improvement) / 3;
+              const avgImp = (child.games.pacman.improvement + child.games.bubblePop.improvement) / 2;
               return acc + avgImp;
             }, 0) / childrenData.length)}%`}
             icon={Award}
@@ -673,8 +651,8 @@ const TherapistDashboard = () => {
                 <BarChart data={childrenData.map(child => ({
                   name: child.name.split(' ')[0],
                   Coordination: child.games.pacman.score,
-                  Math: child.games.spaceMath.score,
-                  Attention: child.games.bubblePop.score
+                  Word: child.games['missing-letter-pop'].score,
+                  Language: child.games['missing-letter-pop'].score
                 }))}>
                   <CartesianGrid strokeDasharray="3,3" stroke="#ffffff30" />
                   <XAxis dataKey="name" stroke="#ffffff80" />
@@ -689,7 +667,7 @@ const TherapistDashboard = () => {
                   />
                   <Bar dataKey="Coordination" fill="#feca57" />
                   <Bar dataKey="Math" fill="#82ca9d" />
-                  <Bar dataKey="Attention" fill="#ffc658" />
+                  <Bar dataKey="Language" fill="#ff7c7c" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
