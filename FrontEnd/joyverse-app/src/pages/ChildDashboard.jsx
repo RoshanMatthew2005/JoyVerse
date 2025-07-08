@@ -51,30 +51,30 @@ const ChildDashboard = () => {
     },
     {
       id: 3,
-      title: '🎨 Art & Drawing',
-      description: 'Create beautiful artwork and drawings!',
-      color: '#4ecdc4',
-      icon: Palette,
-      emoji: '🎨',
-      onClick: () => navigate('/games/art-studio')
-    },
-    {
-      id: 4,
-      title: '🎵 Music Fun',
-      description: 'Listen to songs and make music!',
-      color: '#96ceb4',
-      icon: Music,
-      emoji: '🎵',
-      onClick: () => navigate('/games/music-fun')
-    },
-    {
-      id: 5,
       title: '🚀 Space Math',
       description: 'Solve math problems and explore the galaxy!',
       color: '#e74c3c',
       icon: Zap,
       emoji: '🚀',
       onClick: () => navigate('/games/space-math')
+    },
+    {
+      id: 4,
+      title: '� Art & Drawing',
+      description: 'Create beautiful artwork and drawings!',
+      color: '#4ecdc4',
+      icon: Palette,
+      emoji: '�',
+      onClick: () => navigate('/games/art-studio')
+    },
+    {
+      id: 5,
+      title: '🎵 Music Fun',
+      description: 'Listen to songs and make music!',
+      color: '#96ceb4',
+      icon: Music,
+      emoji: '🎵',
+      onClick: () => navigate('/games/music-fun')
     }
 
   ];
