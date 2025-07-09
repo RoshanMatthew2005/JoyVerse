@@ -485,7 +485,7 @@ class EmotionDetectionService {
       console.log('📤 Sending image to API...', {
         size: imageBlob.size,
         type: imageBlob.type,
-        url: `${this.vitApiUrl}/predict`
+        url: `${this.vitApiUrl}/predict/`
       });
 
       const formData = new FormData();
@@ -497,7 +497,7 @@ class EmotionDetectionService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`${this.vitApiUrl}/predict`, {
+      const response = await fetch(`${this.vitApiUrl}/predict/`, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
@@ -514,18 +514,30 @@ class EmotionDetectionService {
         // Try to parse the JSON response
         try {
           const result = await response.json();
-          console.log('🎯 Emotion detected:', result);
+          // Transform_Model API returns: {prediction, confidence, probabilities, landmarks}
+          // Convert to expected format: {emotion, confidence, probs}
+          const transformedResult = {
+            emotion: result.prediction,
+            confidence: result.confidence / 100, // Convert from 0-100 to 0-1 scale
+            probs: result.probabilities ? Object.fromEntries(
+              Object.entries(result.probabilities).map(([key, value]) => [key, value / 100])
+            ) : {},
+            landmarks: result.landmarks, // Keep landmarks for future use
+            note: result.note // Keep any notes
+          };
+          
+          console.log('🎯 Emotion detected (transformed):', transformedResult);
           
           // Update preview status based on result
-          if (result.note && result.note.includes('no face detected')) {
+          if (transformedResult.note && transformedResult.note.includes('no face detected')) {
             this.updatePreviewStatus('❌ No face detected - please adjust position', false);
-          } else if (result.confidence < 0.3) {
+          } else if (transformedResult.confidence < 0.3) {
             this.updatePreviewStatus('⚠️ Low confidence - improve lighting/position', false);
           } else {
-            this.updatePreviewStatus(`✅ ${result.emotion} detected (${Math.round(result.confidence * 100)}%)`, true);
+            this.updatePreviewStatus(`✅ ${transformedResult.emotion} detected (${Math.round(transformedResult.confidence * 100)}%)`, true);
           }
           
-          return result;
+          return transformedResult;
         } catch (jsonError) {
           console.error('❌ Error parsing API response JSON:', jsonError);
           this.updatePreviewStatus('❌ API response format error', false);
