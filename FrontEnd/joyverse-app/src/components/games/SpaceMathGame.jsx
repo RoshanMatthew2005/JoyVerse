@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, ArrowRight, Zap, Star, Rocket } from 'lucide-react';
 import './SpaceMathGame.css';
 
@@ -13,6 +13,53 @@ const SpaceMathGame = () => {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [stars, setStars] = useState([]);
+  const gameContainerRef = useRef(null);
+
+  // Force full-screen on mount
+  useEffect(() => {
+    const forceFullScreen = () => {
+      if (gameContainerRef.current) {
+        const element = gameContainerRef.current;
+        
+        // Apply inline styles directly to the DOM element
+        element.style.position = 'fixed';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.right = '0';
+        element.style.bottom = '0';
+        element.style.width = '100vw';
+        element.style.height = '100vh';
+        element.style.zIndex = '9999';
+        element.style.margin = '0';
+        element.style.padding = '0';
+        element.style.overflow = 'hidden';
+        element.style.boxSizing = 'border-box';
+        
+        // Force parent body to hide overflow
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        
+        // Remove any constraining parent styles
+        let parent = element.parentElement;
+        while (parent && parent !== document.body) {
+          parent.style.overflow = 'visible';
+          parent.style.position = 'static';
+          parent = parent.parentElement;
+        }
+      }
+    };
+
+    // Apply immediately and on resize
+    forceFullScreen();
+    window.addEventListener('resize', forceFullScreen);
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      window.removeEventListener('resize', forceFullScreen);
+    };
+  }, []);
 
   // Planet data
   const planets = [
@@ -252,7 +299,10 @@ const SpaceMathGame = () => {
 
   if (!gameStarted) {
     return (
-      <div className={`game-container ${currentPlanetData.bgClass} ${currentPlanetData.textClass}`}>
+      <div 
+        ref={gameContainerRef}
+        className={`space-math-game-container game-container ${currentPlanetData.bgClass} ${currentPlanetData.textClass}`}
+      >
         {/* Stars Background */}
         {stars.map(star => (
           <div
@@ -304,7 +354,10 @@ const SpaceMathGame = () => {
   }
 
   return (
-    <div className={`game-container ${currentPlanetData.bgClass} ${currentPlanetData.textClass}`}>
+    <div 
+      ref={gameContainerRef}
+      className={`space-math-game-container game-container ${currentPlanetData.bgClass} ${currentPlanetData.textClass}`}
+    >
       {/* Stars Background */}
       {stars.map(star => (
         <div
