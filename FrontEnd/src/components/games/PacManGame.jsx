@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RotateCcw, Palette, Sparkles, Waves, Flame } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { RotateCcw, Palette, Sparkles, Waves, Flame, Camera, CameraOff } from 'lucide-react';
 import gameScoreService from '../../services/gameScoreAPI';
+import emotionDetectionService from '../../services/emotionAPI';
 
 const COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFFFF']; // Red, Green, Blue, White
 const COLOR_NAMES = ['RED', 'GREEN', 'BLUE', 'WHITE'];
@@ -138,6 +139,92 @@ const PacManGame = ({ onClose, user }) => {
   const [levelCompleted, setLevelCompleted] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
+  // Camera and emotion detection states
+  const [cameraActive, setCameraActive] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState(null);
+  const [emotionConfidence, setEmotionConfidence] = useState(0);
+  const [showEmotionDisplay, setShowEmotionDisplay] = useState(true);
+  const [showCameraPreview, setShowCameraPreview] = useState(true);
+  const emotionCaptureRef = useRef(null);
+  
+  // Emotion-theme mapping
+  const emotionThemeMap = {
+    "happy": "galaxia",    // Bright and colorful theme
+    "sad": "oceania",      // Calming blue theme
+    "angry": "oceania",    // Calming blue to help with anger
+    "fear": "lazarus",     // Intense theme for fear
+    "neutral": "oceania",  // Default oceania theme
+    "surprise": "galaxia", // Bright theme for surprise
+    "disgust": "lazarus",  // Intense theme for disgust
+    "default": "oceania"   // Default theme
+  };
+  
+  // Function to handle emotion detection results
+  const handleEmotionDetected = useCallback((emotionData) => {
+    const { emotion, confidence } = emotionData;
+    
+    // Set the current emotion and confidence
+    setCurrentEmotion(emotion);
+    setEmotionConfidence(confidence);
+    
+    // Update the game theme based on detected emotion
+    const newTheme = emotionThemeMap[emotion] || emotionThemeMap.default;
+    setTheme(newTheme);
+  }, []);
+  
+  // Start emotion detection on game start
+  const startEmotionDetection = useCallback(async () => {
+    if (cameraActive) return;
+    
+    try {
+      const result = await emotionDetectionService.startEmotionDetection(
+        handleEmotionDetected,
+        showCameraPreview // show preview if enabled
+      );
+      
+      setCameraActive(result);
+      
+      // Set up periodic capture every 5 seconds
+      if (result) {
+        // Clear any existing interval
+        if (emotionCaptureRef.current) {
+          clearInterval(emotionCaptureRef.current);
+        }
+        
+        // Set new interval for every 5 seconds
+        emotionCaptureRef.current = setInterval(() => {
+          if (!emotionDetectionService.isCapturing) return;
+          emotionDetectionService.manualCapture();
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Error starting emotion detection:', error);
+      setCameraActive(false);
+    }
+  }, [cameraActive, handleEmotionDetected, showCameraPreview]);
+  
+  // Stop emotion detection
+  const stopEmotionDetection = useCallback(() => {
+    if (emotionCaptureRef.current) {
+      clearInterval(emotionCaptureRef.current);
+      emotionCaptureRef.current = null;
+    }
+    
+    emotionDetectionService.stopEmotionDetection();
+    setCameraActive(false);
+    setCurrentEmotion(null);
+    setEmotionConfidence(0);
+  }, []);
+  
+  // Toggle camera on/off
+  const toggleCamera = useCallback(() => {
+    if (cameraActive) {
+      stopEmotionDetection();
+    } else {
+      startEmotionDetection();
+    }
+  }, [cameraActive, startEmotionDetection, stopEmotionDetection]);
+
   // Load best score from localStorage
   useEffect(() => {
     const savedBestScore = parseInt(localStorage.getItem('pacManBestScore') || '0');
@@ -202,6 +289,15 @@ const PacManGame = ({ onClose, user }) => {
     setLevelCompleted(false);
     setDotsInitialized(true);
   }, [level, initializeDots, gameStarted]);
+
+  // Ensure emotion detection stays active while game is running
+  useEffect(() => {
+    if (gameStarted) {
+      startEmotionDetection();
+    } else {
+      stopEmotionDetection();
+    }
+  }, [gameStarted, startEmotionDetection, stopEmotionDetection]);
 
   // Color cycling with popup
   useEffect(() => {
@@ -305,6 +401,9 @@ const PacManGame = ({ onClose, user }) => {
     setCurrentColor(0);
     setLevelCompleted(false);
     setDotsInitialized(false);
+    
+    // Start emotion detection if enabled
+    startEmotionDetection();
   };
 
   const resetLevel = () => {
@@ -363,10 +462,37 @@ const PacManGame = ({ onClose, user }) => {
       };
       
       const formattedData = gameScoreService.formatGameData('pacman', gameData);
-      await gameScoreService.saveGameScore(formattedData);
-      console.log('✅ PacMan: Game score saved successfully');
+      
+      // Add retry logic for API calls
+      let retries = 3;
+      let success = false;
+      let lastError = null;
+      
+      while (retries > 0 && !success) {
+        try {
+          await gameScoreService.saveGameScore(formattedData);
+          console.log('✅ PacMan: Game score saved successfully');
+          success = true;
+          break;
+        } catch (apiError) {
+          lastError = apiError;
+          console.warn(`⚠️ PacMan: Game score save attempt failed (${retries} retries left):`, apiError);
+          retries--;
+          
+          if (retries > 0) {
+            // Wait before retrying (500ms, 1000ms, etc.)
+            await new Promise(resolve => setTimeout(resolve, (3 - retries) * 500));
+          }
+        }
+      }
+      
+      // If all retries failed, throw the last error
+      if (!success && lastError) {
+        throw lastError;
+      }
     } catch (error) {
       console.error('❌ PacMan: Failed to save game score:', error);
+      // Continue game flow even if score saving fails
     }
   };
 
@@ -374,11 +500,16 @@ const PacManGame = ({ onClose, user }) => {
   const endGame = async () => {
     setGameOver(true);
     
+    // Stop emotion detection
+    stopEmotionDetection();
+    
     // Save score to API if user exists
     if (user) {
       await saveGameScore();
     }
   };
+
+
 
   const currentTheme = THEMES[theme];
   const currentMaze = gameStarted ? LEVELS[level - 1] : LEVELS[0];
@@ -506,6 +637,40 @@ const PacManGame = ({ onClose, user }) => {
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        .emotion-display {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 5px;
+          padding: 10px 20px;
+          margin-bottom: 15px;
+          background: rgba(0, 0, 0, 0.7);
+          border: 2px solid ${currentTheme.borderColor};
+          border-radius: 10px;
+          max-width: 200px;
+        }
+        
+        .emotion-label {
+          font-size: 10px;
+          text-transform: uppercase;
+          color: white;
+          letter-spacing: 1px;
+        }
+        
+        .emotion-confidence-bar {
+          width: 100%;
+          height: 8px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        
+        .emotion-confidence-fill {
+          height: 100%;
+          border-radius: 4px;
+          transition: width 0.5s ease, background-color 0.5s ease;
+        }
         
         .info-container {
           display: flex;
@@ -908,7 +1073,28 @@ const PacManGame = ({ onClose, user }) => {
           {React.createElement(currentTheme.icon, { size: 12 })}
           {currentTheme.name.toUpperCase()}
         </button>
+        <button className="control-btn" onClick={toggleCamera}>
+          {cameraActive ? <CameraOff size={12} /> : <Camera size={12} />}
+          {cameraActive ? "CAMERA OFF" : "CAMERA ON"}
+        </button>
       </div>
+      
+      {/* Emotion Display */}
+      {cameraActive && currentEmotion && showEmotionDisplay && (
+        <div className="emotion-display">
+          <div className="emotion-label">MOOD: {currentEmotion.toUpperCase()}</div>
+          <div className="emotion-confidence-bar">
+            <div 
+              className="emotion-confidence-fill"
+              style={{ 
+                width: `${Math.min(100, emotionConfidence * 100)}%`,
+                backgroundColor: emotionConfidence > 0.7 ? '#00ff00' : 
+                                emotionConfidence > 0.4 ? '#ffff00' : '#ff6b6b'
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Game Board */}
       <div className="game-board">
@@ -986,6 +1172,9 @@ const PacManGame = ({ onClose, user }) => {
           </div>
         </div>
       )}
+
+      {/* Camera is handled by the emotionDetectionService */}
+      {/* The service will automatically create and position the camera feed */}
     </div>
   );
 };

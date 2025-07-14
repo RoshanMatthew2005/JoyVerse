@@ -36,7 +36,9 @@ class EmotionDetectionService {
       // Always stop any existing detection first
       this.stopEmotionDetection();
       
+      // Store callback and settings for recovery if needed
       this.onEmotionDetected = onEmotionCallback;
+      this._currentCallback = onEmotionCallback; // Store for potential restart
       this.showPreview = showPreview;
       
       console.log('📷 Requesting camera permission...');
@@ -108,27 +110,78 @@ class EmotionDetectionService {
       this.canvas.width = 1280;  // Start with larger canvas
       this.canvas.height = 720;
 
-      // Wait for video to be ready
+      // Wait for video to be ready with better error handling
       console.log('⏳ Waiting for video to load...');
       await new Promise((resolve, reject) => {
+        // Use both onloadedmetadata and onloadeddata for better reliability
+        let metadataLoaded = false;
+        let dataLoaded = false;
+        let proceedAnywayTimeout, timeoutId;
+        
+        const checkBothLoaded = () => {
+          if (metadataLoaded && dataLoaded) {
+            console.log('📹 Video fully loaded successfully');
+            if (timeoutId) clearTimeout(timeoutId);
+            if (proceedAnywayTimeout) clearTimeout(proceedAnywayTimeout);
+            resolve();
+          }
+        };
+        
         this.videoElement.onloadedmetadata = () => {
           console.log('📹 Video metadata loaded successfully');
-          console.log('📊 Video dimensions:', {
-            videoWidth: this.videoElement.videoWidth,
-            videoHeight: this.videoElement.videoHeight,
-            readyState: this.videoElement.readyState
-          });
-          resolve();
+          metadataLoaded = true;
+          
+          // Some browsers may succeed here but still fail to play video
+          if (this.videoElement.readyState >= 2) {
+            console.log('📊 Video dimensions:', {
+              videoWidth: this.videoElement.videoWidth,
+              videoHeight: this.videoElement.videoHeight,
+              readyState: this.videoElement.readyState
+            });
+            checkBothLoaded();
+          }
         };
+        
+        this.videoElement.onloadeddata = () => {
+          console.log('📹 Video data loaded successfully');
+          dataLoaded = true;
+          checkBothLoaded();
+        };
+        
+        // If we already have metadata/data loaded (from browser cache), resolve immediately
+        if (this.videoElement.readyState >= 2) {
+          console.log('📹 Video already loaded (readyState >= 2)');
+          metadataLoaded = true;
+          dataLoaded = true;
+          checkBothLoaded();
+        }
+        
         this.videoElement.onerror = (error) => {
           console.error('❌ Video error:', error);
           reject(error);
         };
         
-        // Timeout after 10 seconds
-        setTimeout(() => {
-          reject(new Error('Video loading timeout'));
-        }, 10000);
+        // If video is still loading but taking too long, continue anyway
+        // This helps when video is partially usable but stuck on loading
+        proceedAnywayTimeout = setTimeout(() => {
+          console.warn('⚠️ Video loading partially complete but continuing anyway');
+          if (this.videoElement.readyState >= 1) {
+            resolve();
+          }
+        }, 5000);
+        
+        // Final timeout after 15 seconds (increased from 10)
+        timeoutId = setTimeout(() => {
+          if (proceedAnywayTimeout) clearTimeout(proceedAnywayTimeout);
+          
+          // If we have partial video data, try to continue anyway
+          if (this.videoElement.readyState >= 1) {
+            console.warn('⚠️ Video load timeout but proceeding with partial data');
+            resolve();
+          } else {
+            reject(new Error('Video loading timeout'));
+          }
+        }, 15000);
       });
 
       // Add preview to DOM if requested
@@ -178,6 +231,37 @@ class EmotionDetectionService {
         console.error('📷 No camera found on device');
       } else if (error.name === 'NotReadableError') {
         console.error('📷 Camera is already in use by another application');
+      } else if (error.message && error.message.includes('timeout')) {
+        console.error('⏱️ Camera initialization timed out');
+        
+        if (this._currentCallback) {
+          const savedCallback = this._currentCallback;
+          const savedShowPreview = this.showPreview || false;
+          
+          // Attempt recovery after timeout by restarting
+          console.log('🔄 Attempting recovery by restarting camera...');
+          
+          // Release any existing resources
+          this.stopEmotionDetection();
+          
+          // Wait a moment before retry
+          setTimeout(() => {
+            console.log('🔄 Retrying emotion detection after timeout...');
+            this.startEmotionDetection(savedCallback, savedShowPreview)
+              .then(success => {
+                if (success) {
+                  console.log('✅ Successfully restarted emotion detection after timeout');
+                } else {
+                  console.error('❌ Failed to restart emotion detection after timeout');
+                }
+              })
+              .catch(retryError => {
+                console.error('❌ Error during emotion detection retry:', retryError);
+              });
+          }, 2000);
+        } else {
+          console.log('⚠️ No callback stored, skipping auto-recovery');
+        }
       } else if (error.name === 'OverconstrainedError') {
         console.error('📷 Camera constraints not satisfied');
       }
@@ -693,6 +777,9 @@ class EmotionDetectionService {
       document.body.removeChild(this.videoElement);
       this.videoElement = null;
     }
+    
+    // Note: We're NOT clearing this._currentCallback
+    // so that it can be used for recovery if needed
 
     if (this.canvas && this.canvas.parentNode) {
       document.body.removeChild(this.canvas);

@@ -99,57 +99,33 @@ const gameScoreSchema = new mongoose.Schema({
   gameType: {
     type: String,
     required: true,
-    enum: ['pacman', 'missing-letter-pop', 'space-math']
+    enum: ['pacman', 'spaceMath', 'kittenMatch', 'superKittenMatch', 'missingLetterPop', 'artStudio', 'musicFun']
   },
   score: {
     type: Number,
-    required: true,
-    min: 0
-  },
-  maxScore: {
-    type: Number,
-    default: null
-  },
-  timeTaken: {
-    type: Number, // in seconds
-    default: null
+    required: true
   },
   level: {
     type: Number,
     default: 1
   },
-  gameData: {
-    type: mongoose.Schema.Types.Mixed, // Store additional game-specific data
-    default: {}
+  maxScore: {
+    type: Number
   },
-  playedAt: {
+  timeTaken: {
+    type: Number
+  },
+  accuracy: {
+    type: Number
+  },
+  emotionData: {
+    type: Array
+  },
+  createdAt: {
     type: Date,
     default: Date.now
-  },
-  emotion : {
-    type: String,
-    required: true
-  },
-  confidence: {
-    type: Number,
-    required: true
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now
-  },
-  landmarks: {
-    type: [Number], // assuming it's an array of floats
-    default: []
-  },
-  probs: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
   }
 });
-
-// Create compound index for efficient queries
-gameScoreSchema.index({ userId: 1, gameType: 1, playedAt: -1 });
 
 const GameScore = mongoose.model('GameScore', gameScoreSchema);
 
@@ -160,18 +136,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-
+  
   if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
   }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
-    }
-    req.user = user;
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'joyverse_secret_key');
+    req.user = decoded;
     next();
-  });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return res.status(403).json({ message: 'Invalid token.' });
+  }
 };
 
 // Middleware to verify SuperAdmin access
@@ -845,140 +822,74 @@ app.post('/api/game-scores', authenticateToken, [
   }
 });
 
-// Get User's Game Scores
+app.post('/api/game-scores', authenticateToken, async (req, res) => {
+  try {
+    console.log('🎮 Received game score:', req.body);
+    
+    // Validate input
+    if (!req.body.gameType || req.body.score === undefined) {
+      return res.status(400).json({ message: 'Game type and score are required' });
+    }
+    
+    // Create a new game score entry
+    const gameScore = new GameScore({
+      userId: req.user.id,
+      gameType: req.body.gameType,
+      score: req.body.score,
+      level: req.body.level || 1,
+      maxScore: req.body.maxScore,
+      timeTaken: req.body.timeTaken,
+      accuracy: req.body.accuracy,
+      emotionData: req.body.emotionData || []
+    });
+    
+    // Save to database with timeout handling
+    const savedScore = await Promise.race([
+      gameScore.save(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database timeout')), 5000)
+      )
+    ]);
+    
+    console.log('✅ Game score saved successfully:', savedScore._id);
+    res.status(201).json(savedScore);
+  } catch (error) {
+    console.error('❌ Error saving game score:', error);
+    res.status(500).json({ message: 'Failed to save game score', error: error.message });
+  }
+});
+
 app.get('/api/game-scores', authenticateToken, async (req, res) => {
   try {
     const { gameType, limit = 10, page = 1 } = req.query;
     const skip = (page - 1) * limit;
     
-    let query = { userId: req.user.userId };
+    // Build query
+    const query = { userId: req.user.id };
     if (gameType) {
       query.gameType = gameType;
     }
-
+    
+    // Get scores with pagination
     const scores = await GameScore.find(query)
-      .sort({ playedAt: -1 })
+      .sort({ createdAt: -1 })
       .limit(parseInt(limit))
-      .skip(skip)
-      .select('gameType score maxScore timeTaken level playedAt');
-
-    const totalScores = await GameScore.countDocuments(query);
-
+      .skip(skip);
+    
+    // Get total count
+    const total = await GameScore.countDocuments(query);
+    
     res.json({
       scores,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalScores / limit),
-        totalScores,
-        hasMore: skip + scores.length < totalScores
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit)
       }
     });
   } catch (error) {
-    console.error('Get game scores error:', error);
-    res.status(500).json({ message: 'Failed to fetch game scores' });
-  }
-});
-
-// Get User's Best Scores by Game
-app.get('/api/game-scores/best', authenticateToken, async (req, res) => {
-  try {
-    const bestScores = await GameScore.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(req.user.userId) } },
-      {
-        $group: {
-          _id: '$gameType',
-          bestScore: { $max: '$score' },
-          totalGames: { $sum: 1 },
-          lastPlayed: { $max: '$playedAt' },
-          averageScore: { $avg: '$score' }
-        }
-      },
-      {
-        $project: {
-          gameType: '$_id',
-          bestScore: 1,
-          totalGames: 1,
-          lastPlayed: 1,
-          averageScore: { $round: ['$averageScore', 1] },
-          _id: 0
-        }
-      }
-    ]);
-
-    res.json({ bestScores });
-  } catch (error) {
-    console.error('Get best scores error:', error);
-    res.status(500).json({ message: 'Failed to fetch best scores' });
-  }
-});
-
-// Get Game Statistics
-app.get('/api/game-scores/stats', authenticateToken, async (req, res) => {
-  try {
-    const { gameType } = req.query;
-    let matchQuery = { userId: new mongoose.Types.ObjectId(req.user.userId) };
-    
-    if (gameType) {
-      matchQuery.gameType = gameType;
-    }
-
-    const stats = await GameScore.aggregate([
-      { $match: matchQuery },
-      {
-        $group: {
-          _id: null,
-          totalGames: { $sum: 1 },
-          averageScore: { $avg: '$score' },
-          bestScore: { $max: '$score' },
-          totalTimePlayed: { $sum: '$timeTaken' },
-          lastPlayed: { $max: '$playedAt' }
-        }
-      },
-      {
-        $project: {
-          totalGames: 1,
-          averageScore: { $round: ['$averageScore', 1] },
-          bestScore: 1,
-          totalTimePlayed: { $round: ['$totalTimePlayed', 0] },
-          lastPlayed: 1,
-          _id: 0
-        }
-      }
-    ]);
-
-    res.json({ 
-      stats: stats.length > 0 ? stats[0] : {
-        totalGames: 0,
-        averageScore: 0,
-        bestScore: 0,
-        totalTimePlayed: 0,
-        lastPlayed: null
-      }
-    });
-  } catch (error) {
-    console.error('Get game stats error:', error);
-    res.status(500).json({ message: 'Failed to fetch game statistics' });
-  }
-});
-
-// Delete Game Score (optional - for cleanup)
-app.delete('/api/game-scores/:scoreId', authenticateToken, async (req, res) => {
-  try {
-    const { scoreId } = req.params;
-    
-    const gameScore = await GameScore.findOneAndDelete({
-      _id: scoreId,
-      userId: req.user.userId
-    });
-
-    if (!gameScore) {
-      return res.status(404).json({ message: 'Game score not found' });
-    }
-
-    res.json({ message: 'Game score deleted successfully' });
-  } catch (error) {
-    console.error('Delete game score error:', error);
-    res.status(500).json({ message: 'Failed to delete game score' });
+    console.error('Error fetching game scores:', error);
+    res.status(500).json({ message: 'Failed to fetch game scores', error: error.message });
   }
 });
 // Emotion Schema and Model
