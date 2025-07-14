@@ -6,42 +6,57 @@ const GameStats = ({ user }) => {
   const [stats, setStats] = useState(null);
   const [bestScores, setBestScores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Load game statistics
   useEffect(() => {
-    fetchStats();
-  }, []);
+    const loadGameStats = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      const [statsResponse, bestScoresResponse] = await Promise.all([
-        gameScoreService.getGameStats(),
-        gameScoreService.getBestScores()
-      ]);
-      
-      setStats(statsResponse.stats);
-      setBestScores(bestScoresResponse.bestScores);
-    } catch (error) {
-      console.error('Failed to fetch game stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get overall game statistics
+        const statsResponse = await gameScoreService.getGameStats();
+        setStats(statsResponse.stats);
+
+        // Get best scores for each game - filter to only show our three games
+        const bestScoresResponse = await gameScoreService.getBestScores();
+        const allowedGames = ['pacman', 'missing-letter-pop', 'space-math'];
+        const filteredBestScores = (bestScoresResponse.bestScores || []).filter(
+          score => allowedGames.includes(score.gameType)
+        );
+        setBestScores(filteredBestScores);
+
+      } catch (error) {
+        console.error('Failed to load game statistics:', error);
+        setError('Failed to load game statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGameStats();
+  }, [user]);
 
   const getGameDisplayName = (gameType) => {
     switch (gameType) {
-      case 'kitten-match': return '🐱 Kitten Match';
+      case 'pacman': return '🟡 PacMan Quest';
       case 'missing-letter-pop': return '🔤 Missing Letter Pop';
-      case 'art-studio': return '🎨 Art Studio';
+      case 'space-math': return '🚀 Space Math';
       default: return gameType;
     }
   };
 
   const getGameIcon = (gameType) => {
     switch (gameType) {
-      case 'kitten-match': return '🐱';
+      case 'pacman': return '🟡';
       case 'missing-letter-pop': return '🔤';
-      case 'art-studio': return '🎨';
+      case 'space-math': return '🚀';
       default: return '🎮';
     }
   };
@@ -164,7 +179,7 @@ const GameStats = ({ user }) => {
         </div>
       </div>
 
-      {/* Best Scores by Game */}
+      {/* Best Scores by Game - Only show PacMan and Missing Letter Pop */}
       {bestScores && bestScores.length > 0 && (
         <div>
           <h4 style={{

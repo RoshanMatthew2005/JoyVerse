@@ -140,17 +140,18 @@ class GameScoreService {  // Get auth token from localStorage
     };
 
     switch (gameType) {
-      case 'kitten-match':
+      case 'pacman':
         return {
           ...baseData,
           score: gameSpecificData.score || 0,
           maxScore: gameSpecificData.maxScore,
-          timeTaken: gameSpecificData.timeTaken,
+          timeTaken: gameSpecificData.timeTaken || 0,
           level: gameSpecificData.level || 1,
           gameData: {
-            matchesFound: gameSpecificData.matchesFound,
-            totalPairs: gameSpecificData.totalPairs,
-            difficulty: gameSpecificData.difficulty
+            dotsEaten: gameSpecificData.dotsEaten,
+            totalDots: gameSpecificData.totalDots,
+            accuracy: gameSpecificData.accuracy,
+            level: gameSpecificData.level
           }
         };
 
@@ -169,18 +170,19 @@ class GameScoreService {  // Get auth token from localStorage
           }
         };
 
-      case 'art-studio':
+      case 'space-math':
         return {
           ...baseData,
-          score: gameSpecificData.timeSpent || 0, // Use time spent as score for art
-          timeTaken: gameSpecificData.timeSpent,
-          level: 1,
+          score: gameSpecificData.score || 0,
+          maxScore: gameSpecificData.maxScore,
+          timeTaken: gameSpecificData.timeTaken,
+          level: gameSpecificData.level || 1,
           gameData: {
-            timeSpent: gameSpecificData.timeSpent,
-            toolsUsed: gameSpecificData.toolsUsed,
-            colorsUsed: gameSpecificData.colorsUsed,
-            stickersAdded: gameSpecificData.stickersAdded,
-            artworkSaved: gameSpecificData.artworkSaved
+            problemsSolved: gameSpecificData.problemsSolved,
+            totalProblems: gameSpecificData.totalProblems,
+            accuracy: gameSpecificData.accuracy,
+            currentPlanet: gameSpecificData.currentPlanet,
+            mathOperations: gameSpecificData.mathOperations
           }
         };
 

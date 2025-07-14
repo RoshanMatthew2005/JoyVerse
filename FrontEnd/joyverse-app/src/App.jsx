@@ -10,12 +10,11 @@ import {
   ChildDashboard,
   TherapistDashboard,
   SuperAdminDashboard,
-  KittenMatchGamePage,
   MissingLetterPopPage,
+  PacManGamePage,
   ArtStudioPage,
-  SpaceMathGamePage,
   MusicFunPage,
-  PacManGamePage
+  SpaceMathGamePage
 } from './pages';
 
 // Protected Route Component
@@ -115,18 +114,18 @@ const JoyverseAppContent = () => {
         
         {/* Game Routes */}
         <Route 
-          path="/games/kitten-match" 
-          element={
-            <ProtectedRoute requiredUserType="child">
-              <KittenMatchGamePage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
           path="/games/missing-letter-pop" 
           element={
             <ProtectedRoute requiredUserType="child">
               <MissingLetterPopPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/games/pacman" 
+          element={
+            <ProtectedRoute requiredUserType="child">
+              <PacManGamePage />
             </ProtectedRoute>
           } 
         />
@@ -139,14 +138,6 @@ const JoyverseAppContent = () => {
           } 
         />
         <Route 
-          path="/games/space-math" 
-          element={
-            <ProtectedRoute requiredUserType="child">
-              <SpaceMathGamePage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
           path="/games/music-fun" 
           element={
             <ProtectedRoute requiredUserType="child">
@@ -155,10 +146,10 @@ const JoyverseAppContent = () => {
           } 
         />
         <Route 
-          path="/games/pacman" 
+          path="/games/space-math" 
           element={
             <ProtectedRoute requiredUserType="child">
-              <PacManGamePage />
+              <SpaceMathGamePage />
             </ProtectedRoute>
           } 
         />

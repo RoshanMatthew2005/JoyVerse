@@ -252,7 +252,7 @@ const PacManGame = ({ onClose, user }) => {
         setShowDeathAnimation(true);
         setTimeout(() => {
           setShowDeathAnimation(false);
-          setGameOver(true);
+          endGame();
         }, 1500);
         return;
       }
@@ -291,7 +291,7 @@ const PacManGame = ({ onClose, user }) => {
           setLevel(prev => prev + 1);
         }, 1000);
       } else {
-        setGameOver(true);
+        endGame();
       }
     }
   }, [dots, gameOver, level, levelCompleted, gameStarted, dotsInitialized]);
@@ -344,28 +344,39 @@ const PacManGame = ({ onClose, user }) => {
     setTheme(themeKeys[nextIndex]);
   };
 
+  // Save game score to database
+  const saveGameScore = async () => {
+    try {
+      console.log('🟡 PacMan: saveGameScore function called!');
+      console.log('🟡 PacMan: Saving game score with data:', { score, level });
+      
+      const totalDots = LEVELS[level - 1].flat().filter(cell => cell === 2).length;
+      const dotsEaten = totalDots - dots.length;
+      const gameData = {
+        score,
+        maxScore: totalDots * 20, // Max possible score (20 points per white dot)
+        timeTaken: 0, // PacMan doesn't track time currently
+        level,
+        dotsEaten,
+        totalDots,
+        accuracy: totalDots > 0 ? Math.round((dotsEaten / totalDots) * 100) : 0
+      };
+      
+      const formattedData = gameScoreService.formatGameData('pacman', gameData);
+      await gameScoreService.saveGameScore(formattedData);
+      console.log('✅ PacMan: Game score saved successfully');
+    } catch (error) {
+      console.error('❌ PacMan: Failed to save game score:', error);
+    }
+  };
+
   // End game and save score
   const endGame = async () => {
     setGameOver(true);
     
     // Save score to API if user exists
     if (user) {
-      try {
-        const dotsEaten = initializeDots(level).length - dots.length;
-        const totalDots = initializeDots(level).length;
-        const accuracy = totalDots > 0 ? Math.round((dotsEaten / totalDots) * 100) : 0;
-        
-        await gameScoreService.saveScore({
-          userId: user.userId,
-          gameName: 'PacMan Color Quest',
-          score: score,
-          accuracy: accuracy,
-          level: level,
-          dotsEaten: dotsEaten
-        });
-      } catch (error) {
-        console.error('Error saving score:', error);
-      }
+      await saveGameScore();
     }
   };
 
