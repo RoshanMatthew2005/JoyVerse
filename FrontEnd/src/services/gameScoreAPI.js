@@ -182,7 +182,9 @@ class GameScoreService {  // Get auth token from localStorage
             totalProblems: gameSpecificData.totalProblems,
             accuracy: gameSpecificData.accuracy,
             currentPlanet: gameSpecificData.currentPlanet,
-            mathOperations: gameSpecificData.mathOperations
+            mathOperations: gameSpecificData.mathOperations,
+            emotionsDetected: gameSpecificData.emotionsDetected || [],
+            planetsVisited: gameSpecificData.planetsVisited || []
           }
         };
 

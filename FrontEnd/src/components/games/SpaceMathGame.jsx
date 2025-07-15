@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, ArrowRight, Zap, Star, Rocket } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Sparkles, ArrowRight, Zap, Star, Rocket, Camera, CameraOff } from 'lucide-react';
 import './SpaceMathGame.css';
+import emotionDetectionService from '../../services/emotionAPI';
+import gameScoreService from '../../services/gameScoreAPI';
 
 const SpaceMathGame = () => {
   const [currentPlanet, setCurrentPlanet] = useState(0);
@@ -15,51 +17,33 @@ const SpaceMathGame = () => {
   const [stars, setStars] = useState([]);
   const gameContainerRef = useRef(null);
 
-  // Force full-screen on mount
-  useEffect(() => {
-    const forceFullScreen = () => {
-      if (gameContainerRef.current) {
-        const element = gameContainerRef.current;
-        
-        // Apply inline styles directly to the DOM element
-        element.style.position = 'fixed';
-        element.style.top = '0';
-        element.style.left = '0';
-        element.style.right = '0';
-        element.style.bottom = '0';
-        element.style.width = '100vw';
-        element.style.height = '100vh';
-        element.style.zIndex = '9999';
-        element.style.margin = '0';
-        element.style.padding = '0';
-        element.style.overflow = 'hidden';
-        element.style.boxSizing = 'border-box';
-        
-        // Force parent body to hide overflow
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-        
-        // Remove any constraining parent styles
-        let parent = element.parentElement;
-        while (parent && parent !== document.body) {
-          parent.style.overflow = 'visible';
-          parent.style.position = 'static';
-          parent = parent.parentElement;
-        }
-      }
-    };
-
-    // Apply immediately and on resize
-    forceFullScreen();
-    window.addEventListener('resize', forceFullScreen);
-
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-      window.removeEventListener('resize', forceFullScreen);
-    };
-  }, []);
+  // Camera and emotion detection states
+  const [cameraActive, setCameraActive] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState(null);
+  const [emotionConfidence, setEmotionConfidence] = useState(0);
+  const [showEmotionDisplay, setShowEmotionDisplay] = useState(true);
+  const [showCameraPreview, setShowCameraPreview] = useState(true);
+  const [emotionDetectionFailed, setEmotionDetectionFailed] = useState(false);
+  const emotionCaptureRef = useRef(null);
+  
+  // Game tracking for analytics
+  const [gameStartTime, setGameStartTime] = useState(null);
+  const [emotionsDetected, setEmotionsDetected] = useState([]);
+  const [planetsVisited, setPlanetsVisited] = useState([]);
+  const [problemsSolved, setProblemsSolved] = useState(0);
+  const [totalProblems, setTotalProblems] = useState(0);
+  
+  // Emotion-to-planet mapping
+  const emotionPlanetMap = {
+    "happy": 2,        // Earth - bright and lively
+    "sad": 7,          // Neptune - calming blue
+    "angry": 3,        // Mars - red planet for intensity
+    "fear": 0,         // Mercury - close to sun, intense
+    "neutral": 2,      // Earth - default planet
+    "surprise": 4,     // Jupiter - largest, impressive
+    "disgust": 5,      // Saturn - rings for complexity
+    "default": 2       // Earth as default
+  };
 
   // Planet data
   const planets = [
@@ -171,6 +155,243 @@ const SpaceMathGame = () => {
 
   const currentPlanetData = planets[currentPlanet];
 
+  // Force full-screen on mount
+  useEffect(() => {
+    const forceFullScreen = () => {
+      if (gameContainerRef.current) {
+        const element = gameContainerRef.current;
+        
+        // Apply inline styles directly to the DOM element
+        element.style.position = 'fixed';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.right = '0';
+        element.style.bottom = '0';
+        element.style.width = '100vw';
+        element.style.height = '100vh';
+        element.style.zIndex = '9999';
+        element.style.margin = '0';
+        element.style.padding = '0';
+        element.style.overflow = 'hidden';
+        element.style.boxSizing = 'border-box';
+        
+        // Force parent body to hide overflow
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        
+        // Remove any constraining parent styles
+        let parent = element.parentElement;
+        while (parent && parent !== document.body) {
+          parent.style.overflow = 'visible';
+          parent.style.position = 'static';
+          parent = parent.parentElement;
+        }
+      }
+    };
+
+    // Apply immediately and on resize
+    forceFullScreen();
+    window.addEventListener('resize', forceFullScreen);
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      window.removeEventListener('resize', forceFullScreen);
+    };
+  }, []);
+
+  // Function to handle emotion detection results
+  const handleEmotionDetected = useCallback((emotionData) => {
+    const { emotion, confidence } = emotionData;
+    
+    // Set the current emotion and confidence
+    setCurrentEmotion(emotion);
+    setEmotionConfidence(confidence);
+    
+    // Track emotion for analytics
+    setEmotionsDetected(prev => [
+      ...prev,
+      {
+        emotion,
+        confidence,
+        timestamp: Date.now(),
+        level: level,
+        score: score
+      }
+    ]);
+    
+    // Update the game planet based on detected emotion
+    const newPlanet = emotionPlanetMap[emotion] || emotionPlanetMap.default;
+    if (newPlanet !== currentPlanet) {
+      setCurrentPlanet(newPlanet);
+      
+      // Track planet visit
+      setPlanetsVisited(prev => {
+        const planetName = planets[newPlanet]?.name || 'Unknown';
+        const lastVisit = prev[prev.length - 1];
+        
+        // Only add if it's a different planet than the last visit
+        if (!lastVisit || lastVisit.planetName !== planetName) {
+          return [
+            ...prev,
+            {
+              planetIndex: newPlanet,
+              planetName,
+              emotion,
+              confidence,
+              timestamp: Date.now(),
+              level: level,
+              score: score
+            }
+          ];
+        }
+        return prev;
+      });
+    }
+    
+    console.log(`🎮 SpaceMath: Emotion detected: ${emotion} (${confidence}%) -> Planet: ${planets[newPlanet]?.name}`);
+  }, [currentPlanet, level, score, planets]);  // Added planets dependency
+  
+  // Stop emotion detection
+  const stopEmotionDetection = useCallback(() => {
+    console.log('🛑 SpaceMath: stopEmotionDetection called');
+    console.log('🛑 Current state - cameraActive:', cameraActive, 'gameStarted:', gameStarted);
+    
+    if (emotionCaptureRef.current) {
+      clearInterval(emotionCaptureRef.current);
+      emotionCaptureRef.current = null;
+      console.log('🛑 SpaceMath: Cleared emotion capture interval');
+    }
+    
+    emotionDetectionService.stopEmotionDetection();
+    setCameraActive(false);
+    setCurrentEmotion(null);
+    setEmotionConfidence(0);
+    console.log('🛑 SpaceMath: Emotion detection stopped');
+  }, [cameraActive, gameStarted]);
+  
+  // Start emotion detection on game start
+  const startEmotionDetection = useCallback(async () => {
+    console.log('🎯 SpaceMath: startEmotionDetection called');
+    console.log('🎯 Current state - cameraActive:', cameraActive, 'gameStarted:', gameStarted);
+    
+    // Always check if we need to stop existing detection first
+    if (cameraActive) {
+      console.log('🎯 SpaceMath: Camera already active, restarting...');
+      stopEmotionDetection();
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    try {
+      console.log('🎯 SpaceMath: Starting emotion detection...');
+      
+      // Add a small delay to ensure the game UI is fully loaded
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('🎯 SpaceMath: About to call emotionDetectionService.startEmotionDetection');
+      
+      const result = await emotionDetectionService.startEmotionDetection(
+        handleEmotionDetected,
+        showCameraPreview // show preview if enabled
+      );
+      
+      console.log('🎯 SpaceMath: Emotion detection result:', result);
+      setCameraActive(result);
+      
+      // Set up periodic capture every 5 seconds
+      if (result) {
+        // Clear any existing interval
+        if (emotionCaptureRef.current) {
+          clearInterval(emotionCaptureRef.current);
+        }
+        
+        // Add delay before starting periodic capture
+        setTimeout(() => {
+          if (gameStarted && emotionDetectionService.isCapturing) {
+            emotionCaptureRef.current = setInterval(() => {
+              if (!emotionDetectionService.isCapturing) return;
+              emotionDetectionService.manualCapture();
+            }, 5000);
+            console.log('✅ SpaceMath: Periodic capture interval started');
+          } else {
+            console.warn('⚠️ SpaceMath: Game no longer active, skipping periodic capture setup');
+          }
+        }, 2000); // Wait 2 seconds before starting periodic capture
+      }
+    } catch (error) {
+      console.error('❌ SpaceMath: Error starting emotion detection:', error);
+      setCameraActive(false);
+      setEmotionDetectionFailed(true);
+    }
+  }, [handleEmotionDetected, showCameraPreview, cameraActive, stopEmotionDetection, gameStarted]);
+
+  // Forced emotion detection start (bypasses gameStarted check for initial startup)
+  const startEmotionDetectionForced = useCallback(async () => {
+    console.log('🎯 SpaceMath: startEmotionDetectionForced called');
+    console.log('🎯 Current state - cameraActive:', cameraActive);
+    
+    // Always check if we need to stop existing detection first
+    if (cameraActive) {
+      console.log('🎯 SpaceMath: Camera already active, restarting...');
+      stopEmotionDetection();
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    try {
+      console.log('🎯 SpaceMath: Starting emotion detection (forced)...');
+      
+      // Add a small delay to ensure the game UI is fully loaded
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('🎯 SpaceMath: About to call emotionDetectionService.startEmotionDetection');
+      
+      const result = await emotionDetectionService.startEmotionDetection(
+        handleEmotionDetected,
+        showCameraPreview // show preview if enabled
+      );
+      
+      console.log('🎯 SpaceMath: Emotion detection result:', result);
+      setCameraActive(result);
+      
+      // Set up periodic capture every 5 seconds
+      if (result) {
+        // Clear any existing interval
+        if (emotionCaptureRef.current) {
+          clearInterval(emotionCaptureRef.current);
+        }
+        
+        // Add delay before starting periodic capture
+        setTimeout(() => {
+          if (emotionDetectionService.isCapturing) {
+            emotionCaptureRef.current = setInterval(() => {
+              if (!emotionDetectionService.isCapturing) return;
+              emotionDetectionService.manualCapture();
+            }, 5000);
+            console.log('✅ SpaceMath: Periodic capture interval started');
+          } else {
+            console.warn('⚠️ SpaceMath: Emotion detection service no longer capturing, skipping periodic capture setup');
+          }
+        }, 2000); // Wait 2 seconds before starting periodic capture
+      }
+    } catch (error) {
+      console.error('❌ SpaceMath: Error starting emotion detection:', error);
+      setCameraActive(false);
+      setEmotionDetectionFailed(true);
+    }
+  }, [handleEmotionDetected, showCameraPreview, cameraActive, stopEmotionDetection]);
+  
+  // Toggle camera on/off
+  const toggleCamera = useCallback(() => {
+    if (cameraActive) {
+      stopEmotionDetection();
+    } else {
+      startEmotionDetection();
+    }
+  }, [cameraActive, startEmotionDetection, stopEmotionDetection]);
+
   // Generate stars background
   useEffect(() => {
     const generateStars = () => {
@@ -233,13 +454,72 @@ const SpaceMathGame = () => {
     }
 
     setCurrentProblem({ num1, num2, operation, answer });
+    setTotalProblems(prev => prev + 1);
   };
 
   // Start game
-  const startGame = () => {
+  const startGame = async () => {
+    console.log('🎮 SpaceMath: Starting game...');
     setGameStarted(true);
+    setGameStartTime(Date.now());
+    // Initialize tracking arrays
+    setEmotionsDetected([]);
+    setPlanetsVisited([{
+      planetIndex: currentPlanet,
+      planetName: planets[currentPlanet]?.name || 'Unknown',
+      emotion: currentEmotion || 'initial',
+      confidence: emotionConfidence,
+      timestamp: Date.now(),
+      level: 1,
+      score: 0
+    }]);
+    setProblemsSolved(0);
+    setTotalProblems(0);
     generateProblem();
+    
+    // Automatically start emotion detection when game starts (with delay)
+    setTimeout(async () => {
+      try {
+        console.log('🎯 SpaceMath: Auto-starting emotion detection...');
+        // Call startEmotionDetection directly without checking gameStarted since we know it's true
+        await startEmotionDetectionForced();
+      } catch (error) {
+        console.warn('⚠️ SpaceMath: Could not auto-start emotion detection:', error.message);
+        // Game continues even if emotion detection fails
+      }
+    }, 1000); // Increased delay to ensure all state updates are complete
   };
+
+  // Restart game
+  const restartGame = useCallback(async () => {
+    console.log('🔄 SpaceMath: Restarting game...');
+    
+    // Stop emotion detection first
+    stopEmotionDetection();
+    
+    // Reset all game state
+    setGameStarted(false);
+    setGameStartTime(null);
+    setScore(0);
+    setLevel(1);
+    setCurrentPlanet(0); // Reset to Mercury
+    setCurrentEmotion(null);
+    setEmotionConfidence(0);
+    setCurrentProblem({ num1: 0, num2: 0, operation: '+', answer: 0 });
+    setUserAnswer('');
+    setFeedback('');
+    setEmotionsDetected([]);
+    setPlanetsVisited([]);
+    setProblemsSolved(0);
+    setTotalProblems(0);
+    setShowLevelUp(false);
+    setEmotionDetectionFailed(false);
+    
+    // Small delay to ensure state is reset
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    console.log('✅ SpaceMath: Game restarted, ready to start again');
+  }, [stopEmotionDetection]);
 
   // Handle answer submission
   const handleAnswerSubmit = () => {
@@ -249,6 +529,7 @@ const SpaceMathGame = () => {
     
     if (userNum === currentProblem.answer) {
       setScore(score + level * 10);
+      setProblemsSolved(prev => prev + 1);
       setFeedback('🎉 Correct! Great job, space explorer!');
       
       // Check for level up (every 3 correct answers)
@@ -256,9 +537,24 @@ const SpaceMathGame = () => {
         setLevel(level + 1);
         setShowLevelUp(true);
         
-        // Change planet every 2 levels
-        if (level % 2 === 0 && currentPlanet < planets.length - 1) {
-          setCurrentPlanet(currentPlanet + 1);
+        // Change planet every 2 levels (if emotion detection is not active)
+        if (!cameraActive && level % 2 === 0 && currentPlanet < planets.length - 1) {
+          const newPlanet = currentPlanet + 1;
+          setCurrentPlanet(newPlanet);
+          
+          // Track manual planet change
+          setPlanetsVisited(prev => [
+            ...prev,
+            {
+              planetIndex: newPlanet,
+              planetName: planets[newPlanet]?.name || 'Unknown',
+              emotion: 'level_progression',
+              confidence: 100,
+              timestamp: Date.now(),
+              level: level + 1,
+              score: score + level * 10
+            }
+          ]);
         }
         
         setTimeout(() => setShowLevelUp(false), 3000);
@@ -279,15 +575,104 @@ const SpaceMathGame = () => {
     }
   };
 
+  // Save game score when game ends or significant milestone reached
+  const saveGameProgress = useCallback(async () => {
+    if (!gameStartTime) return;
+    
+    try {
+      // Check if user is authenticated before attempting to save
+      const token = localStorage.getItem('joyverse_token');
+      if (!token) {
+        console.log('ℹ️ SpaceMath: No auth token found, skipping game save');
+        return;
+      }
+      
+      const gameEndTime = Date.now();
+      const timeTaken = Math.round((gameEndTime - gameStartTime) / 1000); // in seconds
+      const accuracy = totalProblems > 0 ? Math.round((problemsSolved / totalProblems) * 100) : 0;
+      
+      const gameData = {
+        score,
+        maxScore: score, // Current score as max for this session
+        timeTaken,
+        level,
+        problemsSolved,
+        totalProblems,
+        accuracy,
+        currentPlanet: planets[currentPlanet]?.name || 'Unknown',
+        mathOperations: ['addition', 'subtraction', 'multiplication'], // Based on levels
+        emotionsDetected,
+        planetsVisited
+      };
+      
+      const formattedData = gameScoreService.formatGameData('space-math', gameData);
+      await gameScoreService.saveGameScore(formattedData);
+      
+      console.log('✅ SpaceMath: Game progress saved successfully');
+    } catch (error) {
+      console.warn('⚠️ SpaceMath: Could not save game progress (continuing without save):', error.message);
+      // Don't throw error - game should continue even if saving fails
+    }
+  }, [gameStartTime, score, level, problemsSolved, totalProblems, currentPlanet, emotionsDetected, planetsVisited, planets]);
+
+  // Auto-save progress every 30 seconds during gameplay
+  useEffect(() => {
+    if (!gameStarted) return;
+    
+    const autoSaveInterval = setInterval(() => {
+      saveGameProgress();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(autoSaveInterval);
+  }, [gameStarted, saveGameProgress]);
+
+  // Cleanup emotion detection when game ends
+  useEffect(() => {
+    // Only stop emotion detection if the game has actually ended (was started and then stopped)
+    if (!gameStarted && cameraActive && gameStartTime) {
+      console.log('🛑 SpaceMath: Game ended, stopping emotion detection');
+      stopEmotionDetection();
+    }
+  }, [gameStarted, gameStartTime, cameraActive, stopEmotionDetection]);
+
+  // Cleanup emotion detection on unmount
+  useEffect(() => {
+    return () => {
+      stopEmotionDetection();
+      // Save final game state if game was started
+      if (gameStarted && gameStartTime) {
+        // Use a non-async function to avoid cleanup issues
+        saveGameProgress().catch(error => {
+          console.warn('⚠️ SpaceMath: Could not save final game state:', error.message);
+        });
+      }
+    };
+  }, [stopEmotionDetection, gameStarted, gameStartTime, saveGameProgress]);
+
   // Show hint
   const showHintHandler = () => {
     setShowHint(true);
     setTimeout(() => setShowHint(false), 3000);
   };
 
-  // Switch to next planet
+  // Switch to next planet (manual override, works even with emotion detection)
   const switchPlanet = () => {
-    setCurrentPlanet((currentPlanet + 1) % planets.length);
+    const newPlanet = (currentPlanet + 1) % planets.length;
+    setCurrentPlanet(newPlanet);
+    
+    // Track manual planet change
+    setPlanetsVisited(prev => [
+      ...prev,
+      {
+        planetIndex: newPlanet,
+        planetName: planets[newPlanet]?.name || 'Unknown',
+        emotion: 'manual_switch',
+        confidence: 100,
+        timestamp: Date.now(),
+        level: level,
+        score: score
+      }
+    ]);
   };
 
   // Handle Enter key
@@ -330,6 +715,9 @@ const SpaceMathGame = () => {
             <p className="game-subtitle-centered">
               Explore the galaxy while solving math problems!
             </p>
+            <p className="emotion-subtitle-centered">
+              Your emotions will automatically guide you to different planets! 🌟
+            </p>
             <button 
               className={`start-button-centered ${currentPlanetData.accentClass}`}
               onClick={startGame}
@@ -347,6 +735,16 @@ const SpaceMathGame = () => {
               <span style={{ fontSize: '1.5rem' }}>{currentPlanetData.emoji}</span>
               Explore {currentPlanetData.name}
             </button>
+            
+            {(currentEmotion || cameraActive) && (
+              <div className="current-emotion-display">
+                {currentEmotion ? (
+                  <span>Current Emotion: {currentEmotion} ({Math.round(emotionConfidence)}%)</span>
+                ) : (
+                  <span>🔍 Emotion Detection Ready</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -393,6 +791,34 @@ const SpaceMathGame = () => {
         </div>
       )}
 
+      {/* Emotion Detection Display */}
+      {showEmotionDisplay && (
+        <div className="emotion-display-overlay">
+          <div className="emotion-info">
+            {cameraActive && currentEmotion ? (
+              <>
+                <div className="emotion-status">
+                  <span className="emotion-icon">😊</span>
+                  <div className="emotion-details">
+                    <div className="emotion-name">{currentEmotion}</div>
+                    <div className="emotion-confidence">{Math.round(emotionConfidence)}% confident</div>
+                    <div className="emotion-planet">Planet: {currentPlanetData.name}</div>
+                  </div>
+                </div>
+              </>
+            ) : cameraActive ? (
+              <div className="emotion-loading">
+                <span>🔍 Detecting emotion...</span>
+              </div>
+            ) : (
+              <div className="emotion-loading">
+                <span>📷 Starting camera...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hint Popup */}
       {showHint && (
         <div className="hint-container">
@@ -425,6 +851,30 @@ const SpaceMathGame = () => {
               <Zap className="score-icon" />
               <span>{score} pts</span>
             </div>
+            
+            {/* Emotion Detection Status Indicator */}
+            <div className={`emotion-status-indicator ${cameraActive ? 'active' : 'inactive'}`}>
+              {cameraActive ? (
+                <>
+                  <Camera size={16} />
+                  <span>Emotion Active</span>
+                </>
+              ) : (
+                <>
+                  <CameraOff size={16} />
+                  <span>Emotion Inactive</span>
+                </>
+              )}
+            </div>
+            
+            {/* Restart Button */}
+            <button 
+              className="restart-button"
+              onClick={restartGame}
+              title="Restart game and reset camera"
+            >
+              <span>🔄</span>
+            </button>
           </div>
         </div>
 
@@ -479,8 +929,20 @@ const SpaceMathGame = () => {
               onClick={switchPlanet}
             >
               <span style={{ fontSize: '1.2rem' }}>{currentPlanetData.emoji}</span>
-              Explore Next Planet
+              Manual Planet Override
             </button>
+            
+            <div className="emotion-mode-info">
+              <p className="emotion-mode-text">
+                {cameraActive ? (
+                  <>🎭 Emotion Detection Active: Planets change automatically based on your emotions!</>
+                ) : emotionDetectionFailed ? (
+                  <>❌ Emotion Detection Failed: Playing with manual planet switching only.</>
+                ) : (
+                  <>📷 Emotion Detection Starting... You can still play while it loads!</>
+                )}
+              </p>
+            </div>
             
             <div className="planet-fact">
               <p className="fact-text">

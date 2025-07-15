@@ -99,7 +99,7 @@ const gameScoreSchema = new mongoose.Schema({
   gameType: {
     type: String,
     required: true,
-    enum: ['pacman', 'spaceMath', 'kittenMatch', 'superKittenMatch', 'missingLetterPop', 'artStudio', 'musicFun']
+    enum: ['pacman', 'space-math', 'missing-letter-pop', 'kitten-match', 'super-kitten-match', 'art-studio', 'music-fun']
   },
   score: {
     type: Number,
@@ -142,7 +142,7 @@ const authenticateToken = (req, res, next) => {
   }
   
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'joyverse_secret_key');
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -768,9 +768,9 @@ app.get('/api/users', authenticateToken, async (req, res) => {
 // GAME SCORE ROUTES
 // ======================
 
-// Save Game Score
+// Save Game Score (Fixed - Single Route)
 app.post('/api/game-scores', authenticateToken, [
-  body('gameType').isIn(['pacman', 'missing-letter-pop', 'space-math']),
+  body('gameType').isIn(['pacman', 'space-math', 'missing-letter-pop', 'kitten-match', 'super-kitten-match', 'art-studio', 'music-fun']),
   body('score').isNumeric().isInt({ min: 0 }),
   body('maxScore').optional().isNumeric(),
   body('timeTaken').optional().isNumeric(),
@@ -822,50 +822,13 @@ app.post('/api/game-scores', authenticateToken, [
   }
 });
 
-app.post('/api/game-scores', authenticateToken, async (req, res) => {
-  try {
-    console.log('🎮 Received game score:', req.body);
-    
-    // Validate input
-    if (!req.body.gameType || req.body.score === undefined) {
-      return res.status(400).json({ message: 'Game type and score are required' });
-    }
-    
-    // Create a new game score entry
-    const gameScore = new GameScore({
-      userId: req.user.id,
-      gameType: req.body.gameType,
-      score: req.body.score,
-      level: req.body.level || 1,
-      maxScore: req.body.maxScore,
-      timeTaken: req.body.timeTaken,
-      accuracy: req.body.accuracy,
-      emotionData: req.body.emotionData || []
-    });
-    
-    // Save to database with timeout handling
-    const savedScore = await Promise.race([
-      gameScore.save(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database timeout')), 5000)
-      )
-    ]);
-    
-    console.log('✅ Game score saved successfully:', savedScore._id);
-    res.status(201).json(savedScore);
-  } catch (error) {
-    console.error('❌ Error saving game score:', error);
-    res.status(500).json({ message: 'Failed to save game score', error: error.message });
-  }
-});
-
 app.get('/api/game-scores', authenticateToken, async (req, res) => {
   try {
     const { gameType, limit = 10, page = 1 } = req.query;
     const skip = (page - 1) * limit;
     
     // Build query
-    const query = { userId: req.user.id };
+    const query = { userId: req.user.userId };
     if (gameType) {
       query.gameType = gameType;
     }
@@ -892,6 +855,127 @@ app.get('/api/game-scores', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch game scores', error: error.message });
   }
 });
+
+// Get user's best scores by game type
+app.get('/api/game-scores/best', authenticateToken, async (req, res) => {
+  try {
+    console.log('🏆 BACKEND: Fetching best scores for user:', req.user.userId);
+    
+    // Get the best score for each game type
+    const gameTypes = ['pacman', 'space-math', 'missing-letter-pop', 'kitten-match', 'super-kitten-match', 'art-studio', 'music-fun'];
+    const bestScores = [];
+    
+    for (const gameType of gameTypes) {
+      const bestScore = await GameScore.findOne({
+        userId: req.user.userId,
+        gameType: gameType
+      })
+      .sort({ score: -1 })
+      .limit(1)
+      .lean();
+      
+      if (bestScore) {
+        bestScores.push({
+          gameType: gameType,
+          score: bestScore.score,
+          maxScore: bestScore.maxScore,
+          level: bestScore.level,
+          timeTaken: bestScore.timeTaken,
+          playedAt: bestScore.createdAt
+        });
+      }
+    }
+    
+    console.log(`🏆 BACKEND: Found ${bestScores.length} best scores`);
+    res.json({
+      bestScores: bestScores
+    });
+  } catch (error) {
+    console.error('💥 BACKEND: Error fetching best scores:', error);
+    res.status(500).json({ message: 'Failed to fetch best scores', error: error.message });
+  }
+});
+
+// Get game statistics for user
+app.get('/api/game-scores/stats', authenticateToken, async (req, res) => {
+  try {
+    console.log('📊 BACKEND: Fetching game statistics for user:', req.user.userId);
+    
+    const { gameType } = req.query;
+    
+    // Build query
+    const query = { userId: req.user.userId };
+    if (gameType) {
+      query.gameType = gameType;
+    }
+    
+    // Get all scores for analysis
+    const allScores = await GameScore.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    if (allScores.length === 0) {
+      return res.json({
+        stats: {
+          totalGames: 0,
+          averageScore: 0,
+          bestScore: 0,
+          totalTimePlayed: 0,
+          averageTime: 0,
+          gamesThisWeek: 0,
+          improvementRate: 0
+        }
+      });
+    }
+    
+    // Calculate statistics
+    const scores = allScores.map(s => s.score);
+    const times = allScores.map(s => s.timeTaken).filter(t => t != null);
+    
+    const totalGames = allScores.length;
+    const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const bestScore = Math.max(...scores);
+    const totalTimePlayed = times.reduce((a, b) => a + b, 0);
+    const averageTime = times.length > 0 ? Math.round(totalTimePlayed / times.length) : 0;
+    
+    // Games played this week
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const gamesThisWeek = allScores.filter(score => score.createdAt >= oneWeekAgo).length;
+    
+    // Calculate improvement rate (compare recent vs older games)
+    let improvementRate = 0;
+    if (totalGames >= 6) {
+      const recentGames = allScores.slice(0, 3);
+      const olderGames = allScores.slice(-3);
+      
+      const recentAvg = recentGames.reduce((sum, game) => sum + game.score, 0) / recentGames.length;
+      const olderAvg = olderGames.reduce((sum, game) => sum + game.score, 0) / olderGames.length;
+      
+      if (olderAvg > 0) {
+        improvementRate = Math.round(((recentAvg - olderAvg) / olderAvg) * 100);
+        improvementRate = Math.max(-100, Math.min(100, improvementRate)); // Cap between -100% and +100%
+      }
+    }
+    
+    const stats = {
+      totalGames,
+      averageScore,
+      bestScore,
+      totalTimePlayed,
+      averageTime,
+      gamesThisWeek,
+      improvementRate
+    };
+    
+    console.log('📊 BACKEND: Calculated stats:', stats);
+    res.json({ stats });
+    
+  } catch (error) {
+    console.error('💥 BACKEND: Error fetching game statistics:', error);
+    res.status(500).json({ message: 'Failed to fetch game statistics', error: error.message });
+  }
+});
+
 // Emotion Schema and Model
 const emotionSchema = new mongoose.Schema({
   userId: {
