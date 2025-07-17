@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api/auth';
 const SUPERADMIN_BASE_URL = 'http://localhost:5000/api/superadmin';
 
 // Helper function to get auth headers
